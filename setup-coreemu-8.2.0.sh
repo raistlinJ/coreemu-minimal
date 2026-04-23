@@ -39,11 +39,12 @@ cd core
 git checkout release-8.2.0
 
 echo "==> Patching CoreEMU dependencies for Python 3.9 compatibility..."
-# grpcio 1.27.2 lacks Python 3.9 wheels and fails to compile from source. We must upgrade it.
-sed -i 's/grpcio = "1.27.2"/grpcio = ">=1.32.0"/g' daemon/pyproject.toml
-sed -i 's/grpcio-tools = "1.27.2"/grpcio-tools = ">=1.32.0"/g' daemon/pyproject.toml
-sed -i 's/grpcio==1.27.2/grpcio>=1.32.0/g' tasks.py
-sed -i 's/grpcio-tools==1.27.2/grpcio-tools>=1.32.0/g' tasks.py
+# grpcio 1.27.2 lacks Python 3.9 wheels and fails to compile from source. 
+# We pin exactly to 1.43.0 because broad constraints (>=) cause the poetry 1.1.12 resolver to hang indefinitely.
+sed -i 's/grpcio = "1.27.2"/grpcio = "1.43.0"/g' daemon/pyproject.toml
+sed -i 's/grpcio-tools = "1.27.2"/grpcio-tools = "1.43.0"/g' daemon/pyproject.toml
+sed -i 's/grpcio==1.27.2/grpcio==1.43.0/g' tasks.py
+sed -i 's/grpcio-tools==1.27.2/grpcio-tools==1.43.0/g' tasks.py
 rm -f daemon/poetry.lock
 
 echo "==> Running CoreEMU 8.2.0 setup toolchain..."
