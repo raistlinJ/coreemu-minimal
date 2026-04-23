@@ -13,7 +13,7 @@ An automated deployment script for provisioning a lightweight, production-ready 
 
 ## Deployment Instructions
 
-1. **Create the VM**: Create a VM in Proxmox and install the minimal Debian 12 "netinst" ISO. When the installer prompts you for "Software selection", ensure only the following are checked:
+1. **Create the Environment**: Create a VM (or bare metal environment) and install the minimal Debian 12 "netinst" ISO. When the installer prompts you for "Software selection", ensure only the following are checked:
    - `[ ]` Debian desktop environment *(UNCHECK)*
    - `[ ]` GNOME *(UNCHECK)*
    - `[*] ` **SSH server** *(CHECK)*
@@ -23,5 +23,5 @@ An automated deployment script for provisioning a lightweight, production-ready 
    ```bash
    sudo ./setup-coreemu.sh
    ```
-4. **Reboot**: Once finished, reboot the VM.
-5. **Access GUI**: Open the Proxmox "Console" for the VM to see the graphical LightDM login screen. Log in, open a terminal, and run `core-gui`.
+4. **Reboot**: Once finished, reboot the machine.
+5. **Access GUI**: Access the machine's display console (e.g., hypervisor web console or physical monitor) to view the graphical LightDM login screen. Log in, open a terminal, and run `core-gui`.
