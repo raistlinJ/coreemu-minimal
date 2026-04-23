@@ -1,13 +1,13 @@
 # CoreEMU Minimal
 
-An automated deployment script for provisioning a lightweight, production-ready CoreEMU environment on a minimal Debian 12 Proxmox VM. 
+An automated deployment script for provisioning a lightweight, production-ready CoreEMU environment on a minimal Debian 12 machine. 
 
 ## Features
 
 - **Lightweight OS Base**: Designed specifically for the Debian 12 "netinst" minimal ISO.
 - **Docker Integration**: Automatically installs the Docker Engine and injects the `{"iptables": false}` fix into `/etc/docker/daemon.json` so Docker does not break CoreEMU's internal routing.
 - **Dynamic Installer**: Dynamically queries the GitHub API to fetch and install the latest CoreEMU release.
-- **Routing Engines**: Installs FRR (Free Range Routing) to provide full `zebra`, `ospfd`, and `bgpd` support for complex network topologies.
+- **Native Routing Engines**: Compiles and installs **OSPF-MDR** (the US Naval Research Laboratory's custom Quagga fork) from source to seamlessly provide the native `zebra` and `ospfd` routing engines that CoreEMU expects.
 - **Minimal GUI**: Installs an extremely lightweight desktop environment (XFCE and LightDM) to run the `core-gui` IDE directly on the VM without bogging down resources.
 - **Service Persistence**: Automatically enables the `core-daemon` systemd service so your emulator backend survives reboots.
 
