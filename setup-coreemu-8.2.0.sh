@@ -54,7 +54,8 @@ rm -rf ~/.local/pipx ~/.local/bin/invoke ~/.local/bin/poetry
 
 echo "==> Running Invoke installation (verbose mode)..."
 export PATH="$HOME/.local/bin:$PATH"
-inv install -v -i debian
+# We pass --local to force a system-wide install via pip, completely bypassing Poetry's infinitely hanging resolver.
+inv install -v -i debian --local
 
 echo "==> Enabling and starting core-daemon..."
 systemctl daemon-reload
