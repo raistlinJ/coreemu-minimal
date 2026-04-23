@@ -68,6 +68,22 @@ echo "==> Installing CoreEMU and system dependencies..."
 # Using apt install ./package.deb automatically resolves and installs dependencies
 apt-get install -y ./coreemu.deb
 
+echo "==> Creating systemd service for CoreEMU 8.2.0..."
+cat << 'EOF' > /etc/systemd/system/core-daemon.service
+[Unit]
+Description=Common Open Research Emulator Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c '$(command -v core-daemon)'
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+
 echo "==> Enabling and starting core-daemon..."
 systemctl enable core-daemon
 systemctl restart core-daemon
