@@ -11,6 +11,13 @@ An automated deployment script for provisioning a lightweight, production-ready 
 - **Minimal GUI**: Installs an extremely lightweight desktop environment (XFCE and LightDM) to run the `core-gui` IDE directly on the VM without bogging down resources.
 - **Service Persistence**: Automatically enables the `core-daemon` systemd service so your emulator backend survives reboots.
 
+## System Requirements
+
+For optimal performance and to ensure enough space for emulator artifacts, the following VM specifications are recommended:
+- **RAM**: 2GB minimum (4GB+ recommended if running heavy Docker nodes or large network topologies).
+- **Storage (HD)**: 15GB to 20GB minimum (The OS, GUI, and CoreEMU take about ~5GB; the remaining space is necessary for PCAP files, logs, and Docker images).
+- **CPU**: 2 vCores minimum.
+
 ## Deployment Instructions
 
 1. **Create the Environment**: Create a VM (or bare metal environment) and install the minimal Debian 12 "netinst" ISO. When the installer prompts you for "Software selection", ensure only the following are checked:
