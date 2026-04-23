@@ -13,7 +13,11 @@ An automated deployment script for provisioning a lightweight, production-ready 
 
 ## Deployment Instructions
 
-1. **Create the VM**: Create a VM in Proxmox and install the minimal Debian 12 ISO (uncheck the graphical desktop environment during setup, leave only SSH Server and standard utilities).
+1. **Create the VM**: Create a VM in Proxmox and install the minimal Debian 12 "netinst" ISO. When the installer prompts you for "Software selection", ensure only the following are checked:
+   - `[ ]` Debian desktop environment *(UNCHECK)*
+   - `[ ]` GNOME *(UNCHECK)*
+   - `[*] ` **SSH server** *(CHECK)*
+   - `[*] ` **standard system utilities** *(CHECK)*
 2. **Transfer Script**: Copy `setup-coreemu.sh` to your VM (e.g., via `scp`).
 3. **Execute**: Run the script as root:
    ```bash
