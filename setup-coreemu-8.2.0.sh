@@ -31,33 +31,21 @@ apt-get install -y xorg xfce4 lightdm dbus-x11 x11-utils xterm
 
 
 
-echo "==> Fetching CoreEMU 8.2.0 release..."
-CORE_URL="https://github.com/coreemu/core/releases/download/release-8.2.0/core_distributed_8.2.0_amd64.deb"
+echo "==> Compiling CoreEMU 8.2.0 from source (required for legacy GUI)..."
+cd /tmp
+git clone https://github.com/coreemu/core.git
+cd core
+git checkout release-8.2.0
 
-echo "==> Downloading CoreEMU from $CORE_URL"
-wget -qO coreemu.deb "$CORE_URL"
+echo "==> Running CoreEMU 8.2.0 setup toolchain..."
+./setup.sh
 
-echo "==> Installing CoreEMU and system dependencies..."
-# Using apt install ./package.deb automatically resolves and installs dependencies
-apt-get install -y ./coreemu.deb
-
-echo "==> Creating systemd service for CoreEMU 8.2.0..."
-cat << 'EOF' > /etc/systemd/system/core-daemon.service
-[Unit]
-Description=Common Open Research Emulator Service
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/bin/bash -c '$(command -v core-daemon)'
-TasksMax=infinity
-
-[Install]
-WantedBy=multi-user.target
-EOF
-systemctl daemon-reload
+echo "==> Running Invoke installation..."
+export PATH="$HOME/.local/bin:$PATH"
+inv install
 
 echo "==> Enabling and starting core-daemon..."
+systemctl daemon-reload
 systemctl enable core-daemon
 systemctl restart core-daemon
 
@@ -73,7 +61,6 @@ cd -
 rm -rf /tmp/ospf-mdr
 
 echo "==> Cleaning up..."
-rm coreemu.deb
 
 echo "========================================="
 echo "   Setup Complete!                       "
