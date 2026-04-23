@@ -20,7 +20,7 @@ For optimal performance and to ensure enough space for emulator artifacts, the f
 
 ## Deployment Instructions
 
-1. **Create the Environment**: Create a VM (or bare metal environment) and install the minimal Debian 12 "netinst" ISO. When the installer prompts you for "Software selection", ensure only the following are checked:
+1. **Create the Environment**: Create a VM (or bare metal environment) and install the minimal [Debian 12 "netinst" ISO](https://www.debian.org/releases/bookworm/debian-installer/). When the installer prompts you for "Software selection", ensure only the following are checked:
    - `[ ]` Debian desktop environment *(UNCHECK)*
    - `[ ]` GNOME *(UNCHECK)*
    - `[*] ` **SSH server** *(CHECK)*
@@ -41,7 +41,7 @@ If you require the legacy interface (`core-gui-legacy`) to fine-tune custom serv
 > CoreEMU 8.2.0 does not natively support Docker nodes. As such, the legacy `setup-coreemu-8.2.0.sh` script does **not** install the Docker Engine.
 
 To deploy the legacy version:
-1. Create a minimal VM using the **Debian 11** netinst ISO.
+1. Create a minimal VM using the [**Debian 11** netinst ISO](https://www.debian.org/releases/bullseye/debian-installer/).
 2. Run the `setup-coreemu-8.2.0.sh` script instead of the default script:
    ```bash
    sudo ./setup-coreemu-8.2.0.sh
