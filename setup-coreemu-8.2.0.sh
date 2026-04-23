@@ -45,7 +45,7 @@ rm -rf ~/.local/pipx ~/.local/bin/invoke ~/.local/bin/poetry
 
 echo "==> Running Invoke installation..."
 export PATH="$HOME/.local/bin:$PATH"
-inv install
+inv install -i debian
 
 echo "==> Enabling and starting core-daemon..."
 systemctl daemon-reload
