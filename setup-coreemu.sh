@@ -14,6 +14,9 @@ echo "========================================="
 echo "   CoreEMU & Docker Setup for Debian 12  "
 echo "========================================="
 
+# Ensure sbin directories are in PATH (fixes "ldconfig not found" on minimal debian via sudo/su)
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
 export DEBIAN_FRONTEND=noninteractive
 
 echo "==> Updating system packages..."
