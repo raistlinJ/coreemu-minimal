@@ -21,7 +21,7 @@ apt-get update
 apt-get upgrade -y
 
 echo "==> Installing basic CLI tools, dependencies, and network daemons (Zebra/FRR)..."
-apt-get install -y curl wget jq git vim nano htop build-essential ca-certificates software-properties-common frr tcpdump tshark
+apt-get install -y curl wget jq git vim nano htop build-essential ca-certificates software-properties-common frr tcpdump tshark python3-venv python3-pip
 
 echo "==> Installing minimal graphical environment (XFCE)..."
 apt-get install -y xorg xfce4 lightdm dbus-x11 x11-utils xterm
