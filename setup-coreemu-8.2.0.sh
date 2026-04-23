@@ -51,9 +51,9 @@ echo "==> Running CoreEMU 8.2.0 setup toolchain..."
 rm -rf ~/.local/pipx ~/.local/bin/invoke ~/.local/bin/poetry
 ./setup.sh
 
-echo "==> Running Invoke installation..."
+echo "==> Running Invoke installation (verbose mode)..."
 export PATH="$HOME/.local/bin:$PATH"
-inv install -i debian
+inv install -v -i debian
 
 echo "==> Enabling and starting core-daemon..."
 systemctl daemon-reload
