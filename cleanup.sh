@@ -18,5 +18,9 @@ if [ -f "/tmp/coreemu.deb" ]; then
     echo "Removing /tmp/coreemu.deb..."
     rm -f /tmp/coreemu.deb
 fi
+if [ -d "$HOME/.local/pipx" ] || [ -f "$HOME/.local/bin/invoke" ]; then
+    echo "Removing cached pipx environments (invoke/poetry)..."
+    rm -rf ~/.local/pipx ~/.local/bin/invoke ~/.local/bin/poetry
+fi
 
 echo "==> Cleanup complete. You can now re-run the setup scripts from a clean state."
