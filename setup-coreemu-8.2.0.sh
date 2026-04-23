@@ -124,3 +124,12 @@ echo "- OSPF-MDR (Zebra/OSPF) routing suite is compiled and installed."
 echo ""
 echo "Verify status with:"
 echo "  systemctl status core-daemon"
+
+echo ""
+read -p "Would you like to reboot the system now? (y/N): " REBOOT_CHOICE
+if [[ "$REBOOT_CHOICE" =~ ^[Yy]$ ]]; then
+    echo "Rebooting system..."
+    reboot
+else
+    echo "Please remember to reboot the system manually to apply all changes."
+fi
