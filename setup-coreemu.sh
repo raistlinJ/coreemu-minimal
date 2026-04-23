@@ -20,8 +20,8 @@ echo "==> Updating system packages..."
 apt-get update
 apt-get upgrade -y
 
-echo "==> Installing basic CLI tools, dependencies, and network daemons (Zebra/FRR)..."
-apt-get install -y curl wget jq git vim nano htop build-essential ca-certificates software-properties-common frr tcpdump tshark python3-full python3-venv python3-pip python3.11-venv python3-tk
+echo "==> Installing basic CLI tools, dependencies, and network daemons..."
+apt-get install -y curl wget jq git vim nano htop build-essential ca-certificates software-properties-common tcpdump tshark python3-full python3-venv python3-pip python3.11-venv python3-tk libtool gawk libreadline-dev automake pkg-config
 
 echo "==> Installing minimal graphical environment (XFCE)..."
 apt-get install -y xorg xfce4 lightdm dbus-x11 x11-utils xterm
@@ -75,6 +75,17 @@ apt-get install -y ./coreemu.deb
 echo "==> Enabling and starting core-daemon..."
 systemctl enable core-daemon
 systemctl restart core-daemon
+
+echo "==> Compiling and Installing OSPF-MDR (Zebra)..."
+# CoreEMU natively expects Zebra from Quagga/OSPF-MDR
+git clone https://github.com/USNavalResearchLaboratory/ospf-mdr.git /tmp/ospf-mdr
+cd /tmp/ospf-mdr
+./bootstrap.sh
+./configure --disable-doc --enable-user=root --enable-group=root --with-cflags=-ggdb --sysconfdir=/usr/local/etc/quagga --enable-vtysh --localstatedir=/var/run/quagga
+make -j $(nproc)
+make install
+cd -
+rm -rf /tmp/ospf-mdr
 
 echo "==> Cleaning up..."
 rm coreemu.deb
