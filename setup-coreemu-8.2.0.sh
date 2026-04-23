@@ -41,10 +41,6 @@ echo "==> Installing CoreEMU and system dependencies..."
 # Using apt install ./package.deb automatically resolves and installs dependencies
 apt-get install -y ./coreemu.deb
 
-echo "==> Creating system symlinks..."
-ln -sf /opt/core/venv/bin/core-daemon /usr/local/bin/core-daemon
-ln -sf /opt/core/venv/bin/core-gui /usr/local/bin/core-gui
-
 echo "==> Creating systemd service for CoreEMU 8.2.0..."
 cat << 'EOF' > /etc/systemd/system/core-daemon.service
 [Unit]
