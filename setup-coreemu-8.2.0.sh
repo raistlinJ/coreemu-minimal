@@ -39,6 +39,8 @@ cd core
 git checkout release-8.2.0
 
 echo "==> Running CoreEMU 8.2.0 setup toolchain..."
+# Clean up existing pipx environments to prevent "already installed" crashes
+rm -rf ~/.local/pipx ~/.local/bin/invoke ~/.local/bin/poetry
 ./setup.sh
 
 echo "==> Running Invoke installation..."
