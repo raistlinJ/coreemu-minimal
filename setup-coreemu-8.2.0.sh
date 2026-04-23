@@ -11,7 +11,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 echo "========================================="
-echo "   CoreEMU 8.2.0 & Docker Setup (Debian 11) "
+echo "   CoreEMU 8.2.0 Setup (Debian 11)       "
 echo "========================================="
 
 # Ensure sbin directories are in PATH (fixes "ldconfig not found" on minimal debian via sudo/su)
@@ -29,34 +29,7 @@ apt-get install -y curl wget jq git vim nano htop build-essential ca-certificate
 echo "==> Installing minimal graphical environment (XFCE)..."
 apt-get install -y xorg xfce4 lightdm dbus-x11 x11-utils xterm
 
-echo "==> Installing Docker Engine..."
-if ! command -v docker &> /dev/null; then
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
-    rm get-docker.sh
-    
-    echo "==> Applying Docker iptables fix for CoreEMU..."
-    mkdir -p /etc/docker
-    if [ -f /etc/docker/daemon.json ]; then
-        echo "Found existing daemon.json, merging config..."
-        jq '. + {"iptables": false}' /etc/docker/daemon.json > /etc/docker/daemon.json.tmp && mv /etc/docker/daemon.json.tmp /etc/docker/daemon.json
-    else
-        echo '{"iptables": false}' > /etc/docker/daemon.json
-    fi
-    
-    systemctl enable docker
-    systemctl start docker
-    
-    # Attempt to add the user running sudo to the docker group
-    if [ -n "$SUDO_USER" ]; then
-        echo "Adding user $SUDO_USER to the docker group..."
-        usermod -aG docker "$SUDO_USER"
-    else
-        echo "Note: Run 'usermod -aG docker <your_user>' to manage docker without sudo."
-    fi
-else
-    echo "Docker is already installed."
-fi
+
 
 echo "==> Fetching CoreEMU 8.2.0 release..."
 CORE_URL="https://github.com/coreemu/core/releases/download/release-8.2.0/core_distributed_8.2.0_amd64.deb"
