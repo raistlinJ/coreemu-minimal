@@ -11,7 +11,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 echo "========================================="
-echo "   CoreEMU & Docker Setup for Debian 12  "
+echo "   CoreEMU 8.2.0 & Docker Setup (Debian 11) "
 echo "========================================="
 
 # Ensure sbin directories are in PATH (fixes "ldconfig not found" on minimal debian via sudo/su)
@@ -24,7 +24,7 @@ apt-get update
 apt-get upgrade -y
 
 echo "==> Installing basic CLI tools, dependencies, and network daemons..."
-apt-get install -y curl wget jq git vim nano htop build-essential ca-certificates software-properties-common tcpdump tshark python3-full python3-venv python3-pip python3.11-venv python3-tk libtool gawk libreadline-dev automake pkg-config
+apt-get install -y curl wget jq git vim nano htop build-essential ca-certificates software-properties-common tcpdump tshark python3-venv python3-pip python3.9-venv python3-tk libtool gawk libreadline-dev automake pkg-config
 
 echo "==> Installing minimal graphical environment (XFCE)..."
 apt-get install -y xorg xfce4 lightdm dbus-x11 x11-utils xterm

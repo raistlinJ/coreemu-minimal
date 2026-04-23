@@ -25,3 +25,14 @@ An automated deployment script for provisioning a lightweight, production-ready 
    ```
 4. **Reboot**: Once finished, reboot the machine.
 5. **Access GUI**: Access the machine's display console (e.g., hypervisor web console or physical monitor) to view the graphical LightDM login screen. Log in, open a terminal, and run `core-gui`.
+
+## Legacy Version Support (CoreEMU 8.2.0)
+
+If you require the legacy interface (`core-gui-legacy`) to fine-tune custom services, you must use version 8.2.0. Because 8.2.0 relies on older dependencies, you **must use a Debian 11 (Bullseye)** machine.
+
+To deploy the legacy version:
+1. Create a minimal VM using the **Debian 11** netinst ISO.
+2. Run the `setup-coreemu-8.2.0.sh` script instead of the default script:
+   ```bash
+   sudo ./setup-coreemu-8.2.0.sh
+   ```
