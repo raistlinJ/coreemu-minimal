@@ -25,10 +25,16 @@ For optimal performance and to ensure enough space for emulator artifacts, the f
    - `[ ]` GNOME *(UNCHECK)*
    - `[*] ` **SSH server** *(CHECK)*
    - `[*] ` **standard system utilities** *(CHECK)*
-2. **Transfer Script**: Copy `setup-coreemu.sh` to your VM (e.g., via `scp`).
-3. **Execute**: Run the script as root:
+2. **Download Script**: Install Git, clone this repository to your VM, and navigate into it:
    ```bash
-   sudo ./setup-coreemu.sh
+   su -
+   apt update && apt install -y git
+   git clone https://github.com/raistlinJ/coreemu-minimal.git
+   cd coreemu-minimal
+   ```
+3. **Execute**: Run the script:
+   ```bash
+   ./setup-coreemu.sh
    ```
 4. **Reboot**: Once finished, reboot the machine.
 5. **Access GUI**: Access the machine's display console (e.g., hypervisor web console or physical monitor) to view the graphical LightDM login screen. Log in, open a terminal, and run `core-gui`.
@@ -42,7 +48,11 @@ If you require the legacy interface (`core-gui-legacy`) to fine-tune custom serv
 
 To deploy the legacy version:
 1. Create a minimal VM using the [**Debian 11** netinst ISO](https://www.debian.org/releases/bullseye/debian-installer/).
-2. Run the `setup-coreemu-8.2.0.sh` script instead of the default script:
+2. Download the repository and run the `setup-coreemu-8.2.0.sh` script instead of the default script:
    ```bash
-   sudo ./setup-coreemu-8.2.0.sh
+   su -
+   apt update && apt install -y git
+   git clone https://github.com/raistlinJ/coreemu-minimal.git
+   cd coreemu-minimal
+   ./setup-coreemu-8.2.0.sh
    ```
