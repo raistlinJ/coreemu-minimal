@@ -33,6 +33,7 @@ apt-get install -y xorg xfce4 lightdm dbus-x11 x11-utils xterm
 
 echo "==> Compiling CoreEMU 8.2.0 from source (required for legacy GUI)..."
 cd /tmp
+rm -rf /tmp/core
 git clone https://github.com/coreemu/core.git
 cd core
 git checkout release-8.2.0
@@ -102,6 +103,7 @@ systemctl enable core-autostart
 
 echo "==> Compiling and Installing OSPF-MDR (Zebra)..."
 # CoreEMU natively expects Zebra from Quagga/OSPF-MDR
+rm -rf /tmp/ospf-mdr
 git clone https://github.com/USNavalResearchLaboratory/ospf-mdr.git /tmp/ospf-mdr
 cd /tmp/ospf-mdr
 ./bootstrap.sh

@@ -34,7 +34,7 @@ For optimal performance and to ensure enough space for emulator artifacts, the f
    ```
 3. **Execute**: Run the script:
    ```bash
-   ./setup-coreemu.sh
+   ./setup-coreemu9.2.1.sh
    ```
 4. **Reboot**: Once finished, reboot the machine.
 5. **Access GUI**: Access the machine's display console (e.g., hypervisor web console or physical monitor) to view the graphical LightDM login screen. Log in, open a terminal, and run `core-gui`.
