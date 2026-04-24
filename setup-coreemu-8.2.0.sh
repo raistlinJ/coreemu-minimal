@@ -75,19 +75,19 @@ inv install -v -i debian --local --no-ospf
 
 echo "==> Installing CoreEMU runtime Python dependencies..."
 # The --local flag only installs the core wheel itself without its dependencies.
-# We must manually install them so that core-gui and core-daemon can actually run.
-python3 -m pip install \
-    grpcio==1.43.0 \
-    grpcio-tools==1.43.0 \
-    fabric==2.5.0 \
-    invoke==1.4.1 \
-    lxml==4.9.0 \
-    mako==1.1.3 \
-    netaddr==0.7.19 \
-    pillow==8.3.2 \
-    protobuf==3.19.4 \
-    pyproj==3.2.0 \
-    pyyaml==5.4
+# tasks.py rewrites core-gui's shebang to point to Poetry's venv Python, so we
+# must install deps into THAT venv, not just the system Python.
+CORE_DEPS="grpcio==1.43.0 grpcio-tools==1.43.0 fabric==2.5.0 invoke==1.4.1 lxml==4.9.0 mako==1.1.3 netaddr==0.7.19 pillow==8.3.2 protobuf==3.19.4 pyproj==3.2.0 pyyaml==5.4"
+
+# Install into system Python
+python3 -m pip install $CORE_DEPS
+
+# Also install into the Poetry venv that core-gui actually uses
+CORE_PYTHON=$(head -1 "$(which core-gui 2>/dev/null)" 2>/dev/null | sed 's/^#!//')
+if [ -n "$CORE_PYTHON" ] && [ "$CORE_PYTHON" != "$(which python3)" ]; then
+    echo "==> Detected core-gui uses venv Python: $CORE_PYTHON"
+    "$CORE_PYTHON" -m pip install $CORE_DEPS
+fi
 
 echo "==> Enabling and starting core-daemon..."
 systemctl daemon-reload
