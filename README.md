@@ -58,16 +58,21 @@ If you require the legacy interface (`core-gui-legacy`) to manage custom service
 3. **Reboot**: The script will prompt you to reboot when finished.
 4. **Access GUI**: Log in via LightDM, open a terminal, and run `core-gui`.
 
-### Scenario Autostart (8.2.0)
+## Scenario Autostart (Both Versions)
 
-To automatically load a CoreEMU scenario on boot:
+Both scripts install a systemd-based autostart mechanism that reliably loads a CoreEMU scenario on boot (replacing the old, unreliable `rc.local` approach).
+
+To configure it:
 
 1. Open `/root/Desktop/autostart.conf` in a text editor.
-2. Uncomment the `SCENARIO_FILE` line and set the path to your `.imn` or `.xml` topology file:
+2. Uncomment the `SCENARIO_FILE` line and set the path to your topology file:
    ```bash
-   SCENARIO_FILE="/root/myscenario.imn"
+   SCENARIO_FILE="/root/myscenario.xml"
    ```
-3. Reboot. The scenario will load automatically via a systemd service that waits for `core-daemon` to be fully ready.
+3. Reboot. The `core-autostart.service` systemd unit will wait for `core-daemon` to be fully ready, then automatically load and start the scenario.
+
+> [!NOTE]
+> On 9.2.1, scenarios are loaded via `core-cli xml -f <file> -s`. On 8.2.0, they are loaded via `core-gui-legacy -b <file>`.
 
 ## Troubleshooting
 

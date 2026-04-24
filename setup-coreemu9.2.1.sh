@@ -95,12 +95,86 @@ rm -rf /tmp/ospf-mdr
 echo "==> Cleaning up..."
 rm coreemu.deb
 
+# =========================================
+# Scenario Autostart Configuration
+# =========================================
+
+echo "==> Creating scenario autostart configuration..."
+
+# Create desktop config file for the user to specify a scenario
+mkdir -p /root/Desktop
+cat > /root/Desktop/autostart.conf << 'AUTOSTART_CONF'
+# CoreEMU Scenario Autostart Configuration
+# -----------------------------------------
+# To automatically load a scenario on boot, uncomment the line below
+# and set the path to your .xml scenario file.
+#
+# SCENARIO_FILE="/root/myscenario.xml"
+AUTOSTART_CONF
+
+# Create the autostart wrapper script
+cat > /usr/local/bin/core-autostart << 'AUTOSTART_SCRIPT'
+#!/bin/bash
+# core-autostart: Reads /root/Desktop/autostart.conf and starts a scenario if configured.
+
+CONF_FILE="/root/Desktop/autostart.conf"
+
+if [ ! -f "$CONF_FILE" ]; then
+    echo "core-autostart: No config file found at $CONF_FILE, skipping."
+    exit 0
+fi
+
+source "$CONF_FILE"
+
+if [ -z "$SCENARIO_FILE" ]; then
+    echo "core-autostart: No SCENARIO_FILE configured, skipping."
+    exit 0
+fi
+
+if [ ! -f "$SCENARIO_FILE" ]; then
+    echo "core-autostart: Scenario file not found: $SCENARIO_FILE"
+    exit 1
+fi
+
+echo "core-autostart: Loading scenario $SCENARIO_FILE..."
+sleep 5  # Give core-daemon a moment to fully initialize gRPC
+
+# Use core-cli to load and start the scenario
+if command -v core-cli &> /dev/null; then
+    core-cli xml -f "$SCENARIO_FILE" -s
+else
+    echo "core-autostart: core-cli not found in PATH."
+    exit 1
+fi
+AUTOSTART_SCRIPT
+chmod +x /usr/local/bin/core-autostart
+
+# Create the systemd service
+cat > /etc/systemd/system/core-autostart.service << 'SYSTEMD_SERVICE'
+[Unit]
+Description=CoreEMU Scenario Autostart
+After=core-daemon.service
+Requires=core-daemon.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/core-autostart
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+SYSTEMD_SERVICE
+
+systemctl daemon-reload
+systemctl enable core-autostart.service
+
 echo "========================================="
 echo "   Setup Complete!                       "
 echo "========================================="
 echo "- Docker is installed and running."
 echo "- Basic CLI IDE tools (vim, nano) are installed."
 echo "- CoreEMU backend (core-daemon) is enabled and running."
+echo "- Scenario autostart is configured via /root/Desktop/autostart.conf"
 echo ""
 echo "Verify status with:"
 echo "  systemctl status core-daemon"
