@@ -99,20 +99,69 @@ chmod 644 /etc/core/autostart.conf
 
 cat << 'EOF' > /usr/local/bin/core-autostart
 #!/bin/bash
-CONFIG_FILE="/etc/core/autostart.conf"
+# core-autostart: Waits for core-daemon + gRPC to be fully ready, then starts a scenario.
 
-if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
-    if [ -n "$SCENARIO_FILE" ]; then
-        if [ -f "$SCENARIO_FILE" ]; then
-            echo "Autostarting CoreEMU scenario: $SCENARIO_FILE"
-            sleep 5  # Give core-daemon time to fully initialize
-            core-gui-legacy -b "$SCENARIO_FILE"
-        else
-            echo "Error: Scenario file $SCENARIO_FILE not found."
-        fi
-    fi
+CONFIG_FILE="/etc/core/autostart.conf"
+MAX_WAIT=60       # Maximum seconds to wait for core-daemon
+GRPC_PORT=50051   # Default core-daemon gRPC port
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "core-autostart: No config file found at $CONFIG_FILE, skipping."
+    exit 0
 fi
+
+source "$CONFIG_FILE"
+
+if [ -z "$SCENARIO_FILE" ]; then
+    echo "core-autostart: No SCENARIO_FILE configured, skipping."
+    exit 0
+fi
+
+if [ ! -f "$SCENARIO_FILE" ]; then
+    echo "core-autostart: ERROR - Scenario file not found: $SCENARIO_FILE"
+    exit 1
+fi
+
+# --- Wait for core-daemon systemd service ---
+echo "core-autostart: Waiting for core-daemon service to be active..."
+ELAPSED=0
+while [ $ELAPSED -lt $MAX_WAIT ]; do
+    if systemctl is-active --quiet core-daemon; then
+        echo "core-autostart: core-daemon service is active."
+        break
+    fi
+    sleep 2
+    ELAPSED=$((ELAPSED + 2))
+done
+
+if ! systemctl is-active --quiet core-daemon; then
+    echo "core-autostart: ERROR - core-daemon did not start within ${MAX_WAIT}s."
+    exit 1
+fi
+
+# --- Wait for gRPC port to be listening ---
+echo "core-autostart: Waiting for gRPC port $GRPC_PORT to be ready..."
+ELAPSED=0
+while [ $ELAPSED -lt $MAX_WAIT ]; do
+    if ss -tlnp | grep -q ":${GRPC_PORT} "; then
+        echo "core-autostart: gRPC port $GRPC_PORT is listening."
+        break
+    fi
+    sleep 2
+    ELAPSED=$((ELAPSED + 2))
+done
+
+if ! ss -tlnp | grep -q ":${GRPC_PORT} "; then
+    echo "core-autostart: ERROR - gRPC port $GRPC_PORT not ready within ${MAX_WAIT}s."
+    exit 1
+fi
+
+# --- Extra safety buffer for internal initialization ---
+sleep 3
+
+echo "core-autostart: Starting scenario: $SCENARIO_FILE"
+core-gui-legacy -b "$SCENARIO_FILE"
+echo "core-autostart: Scenario loaded successfully."
 EOF
 chmod +x /usr/local/bin/core-autostart
 

@@ -101,9 +101,9 @@ rm coreemu.deb
 
 echo "==> Creating scenario autostart configuration..."
 
-# Create desktop config file for the user to specify a scenario
-mkdir -p /root/Desktop
-cat > /root/Desktop/autostart.conf << 'AUTOSTART_CONF'
+# Create system-wide config file for the user to specify a scenario
+mkdir -p /etc/core
+cat > /etc/core/autostart.conf << 'AUTOSTART_CONF'
 # CoreEMU Scenario Autostart Configuration
 # -----------------------------------------
 # To automatically load a scenario on boot, uncomment the line below
@@ -111,20 +111,23 @@ cat > /root/Desktop/autostart.conf << 'AUTOSTART_CONF'
 #
 # SCENARIO_FILE="/root/myscenario.xml"
 AUTOSTART_CONF
+chmod 644 /etc/core/autostart.conf
 
 # Create the autostart wrapper script
 cat > /usr/local/bin/core-autostart << 'AUTOSTART_SCRIPT'
 #!/bin/bash
-# core-autostart: Reads /root/Desktop/autostart.conf and starts a scenario if configured.
+# core-autostart: Waits for core-daemon + gRPC to be fully ready, then starts a scenario.
 
-CONF_FILE="/root/Desktop/autostart.conf"
+CONFIG_FILE="/etc/core/autostart.conf"
+MAX_WAIT=60       # Maximum seconds to wait for core-daemon
+GRPC_PORT=50051   # Default core-daemon gRPC port
 
-if [ ! -f "$CONF_FILE" ]; then
-    echo "core-autostart: No config file found at $CONF_FILE, skipping."
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "core-autostart: No config file found at $CONFIG_FILE, skipping."
     exit 0
 fi
 
-source "$CONF_FILE"
+source "$CONFIG_FILE"
 
 if [ -z "$SCENARIO_FILE" ]; then
     echo "core-autostart: No SCENARIO_FILE configured, skipping."
@@ -132,20 +135,50 @@ if [ -z "$SCENARIO_FILE" ]; then
 fi
 
 if [ ! -f "$SCENARIO_FILE" ]; then
-    echo "core-autostart: Scenario file not found: $SCENARIO_FILE"
+    echo "core-autostart: ERROR - Scenario file not found: $SCENARIO_FILE"
     exit 1
 fi
 
-echo "core-autostart: Loading scenario $SCENARIO_FILE..."
-sleep 5  # Give core-daemon a moment to fully initialize gRPC
+# --- Wait for core-daemon systemd service ---
+echo "core-autostart: Waiting for core-daemon service to be active..."
+ELAPSED=0
+while [ $ELAPSED -lt $MAX_WAIT ]; do
+    if systemctl is-active --quiet core-daemon; then
+        echo "core-autostart: core-daemon service is active."
+        break
+    fi
+    sleep 2
+    ELAPSED=$((ELAPSED + 2))
+done
 
-# Use core-cli to load and start the scenario
-if command -v core-cli &> /dev/null; then
-    core-cli xml -f "$SCENARIO_FILE" -s
-else
-    echo "core-autostart: core-cli not found in PATH."
+if ! systemctl is-active --quiet core-daemon; then
+    echo "core-autostart: ERROR - core-daemon did not start within ${MAX_WAIT}s."
     exit 1
 fi
+
+# --- Wait for gRPC port to be listening ---
+echo "core-autostart: Waiting for gRPC port $GRPC_PORT to be ready..."
+ELAPSED=0
+while [ $ELAPSED -lt $MAX_WAIT ]; do
+    if ss -tlnp | grep -q ":${GRPC_PORT} "; then
+        echo "core-autostart: gRPC port $GRPC_PORT is listening."
+        break
+    fi
+    sleep 2
+    ELAPSED=$((ELAPSED + 2))
+done
+
+if ! ss -tlnp | grep -q ":${GRPC_PORT} "; then
+    echo "core-autostart: ERROR - gRPC port $GRPC_PORT not ready within ${MAX_WAIT}s."
+    exit 1
+fi
+
+# --- Extra safety buffer for internal initialization ---
+sleep 3
+
+echo "core-autostart: Starting scenario: $SCENARIO_FILE"
+core-cli xml -f "$SCENARIO_FILE" -s
+echo "core-autostart: Scenario loaded successfully."
 AUTOSTART_SCRIPT
 chmod +x /usr/local/bin/core-autostart
 
