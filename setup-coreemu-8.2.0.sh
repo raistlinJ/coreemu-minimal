@@ -77,17 +77,11 @@ echo "==> Installing CoreEMU runtime Python dependencies..."
 # The --local flag only installs the core wheel itself without its dependencies.
 CORE_DEPS="grpcio==1.43.0 grpcio-tools==1.43.0 fabric==2.5.0 invoke==1.4.1 lxml==4.9.0 mako==1.1.3 netaddr==0.7.19 pillow==8.3.2 protobuf==3.19.4 pyproj==3.2.0 pyyaml==5.4 setuptools"
 
-# Install into system Python
-python3 -m pip install $CORE_DEPS
-
-# Also install into the Poetry venv if one exists
-cd /tmp/core/daemon
-VENV_PYTHON=$(poetry env info -p 2>/dev/null)/bin/python
-if [ -x "$VENV_PYTHON" ]; then
-    echo "==> Also installing deps into Poetry venv: $VENV_PYTHON"
-    "$VENV_PYTHON" -m pip install $CORE_DEPS
-fi
-cd -
+# Install to the SYSTEM site-packages so ALL users (not just root) can use core-gui.
+# Without --target, pip as root may install to ~/.local which is only visible to root.
+SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+echo "==> Installing to system site-packages: $SITE_PACKAGES"
+python3 -m pip install --target="$SITE_PACKAGES" $CORE_DEPS
 
 echo "==> Enabling and starting core-daemon..."
 systemctl daemon-reload
@@ -157,6 +151,28 @@ make -j $(nproc)
 make install
 cd -
 rm -rf /tmp/ospf-mdr
+
+# =========================================
+# Regular (non-root) User Setup
+# =========================================
+echo "==> Configuring CoreEMU for regular users..."
+
+# Detect the first non-root human user (UID >= 1000)
+REGULAR_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1; exit}' /etc/passwd)
+if [ -n "$REGULAR_USER" ]; then
+    REGULAR_HOME=$(eval echo "~$REGULAR_USER")
+    echo "==> Detected regular user: $REGULAR_USER ($REGULAR_HOME)"
+
+    # Copy autostart.conf to regular user's Desktop
+    mkdir -p "$REGULAR_HOME/Desktop"
+    cp /root/Desktop/autostart.conf "$REGULAR_HOME/Desktop/autostart.conf"
+    chown "$REGULAR_USER:$REGULAR_USER" "$REGULAR_HOME/Desktop/autostart.conf"
+
+    # Also install the core wheel for the regular user
+    sudo -u "$REGULAR_USER" python3 -m pip install --user core 2>/dev/null || true
+else
+    echo "==> No regular user detected, skipping user-level setup."
+fi
 
 echo "==> Cleaning up..."
 
