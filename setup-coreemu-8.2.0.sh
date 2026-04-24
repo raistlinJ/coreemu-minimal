@@ -23,6 +23,11 @@ export PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
 EOF
 chmod 644 /etc/profile.d/sbin-path.sh
 
+# Also add to /etc/bash.bashrc for non-login shells (e.g., XFCE terminal windows)
+if ! grep -q '/usr/sbin' /etc/bash.bashrc 2>/dev/null; then
+    echo 'export PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"' >> /etc/bash.bashrc
+fi
+
 export DEBIAN_FRONTEND=noninteractive
 
 echo "==> Updating system packages..."
