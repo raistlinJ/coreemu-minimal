@@ -9,8 +9,8 @@ Automated deployment scripts for provisioning lightweight, production-ready Core
 - **Docker Integration (9.2.1)**: Automatically installs the Docker Engine and injects the `{"iptables": false}` fix so Docker does not break CoreEMU's internal routing.
 - **Native Routing Engines**: Compiles and installs **OSPF-MDR** (the US Naval Research Laboratory's custom Quagga fork) from source to provide the native `zebra` and `ospfd` routing daemons that CoreEMU expects.
 - **Minimal GUI**: Installs an extremely lightweight desktop environment (XFCE + LightDM) to run `core-gui` directly on the VM.
-- **Service Persistence**: Automatically enables the `core-daemon` systemd service so the emulator backend survives reboots.
-- **Scenario Autostart (8.2.0)**: Includes a systemd-based autostart mechanism to automatically load a CoreEMU scenario on boot. Configure via `/root/Desktop/autostart.conf`.
+- **Service Persistence**: Automatically enables `core-daemon` via systemd so it starts on every boot.
+- **Robust Scenario Autostart**: Includes a systemd-based autostart mechanism with active polling to guarantee `core-daemon` and its gRPC API are fully ready before loading a scenario. Configure via `/etc/core/autostart.conf`.
 - **Idempotent & Re-runnable**: Scripts clean up cached build directories automatically so they can be safely re-run after a failure without manual intervention.
 - **Cleanup Utility**: Includes `cleanup.sh` to manually wipe all build caches and previously installed components for a fresh start.
 
@@ -60,9 +60,21 @@ If you require the legacy interface (`core-gui-legacy`) to manage custom service
 
 ## Scenario Autostart (Both Versions)
 
-Both scripts install a systemd-based autostart mechanism that reliably loads a CoreEMU scenario on boot (replacing the old, unreliable `rc.local` approach).
+Both scripts install a systemd-based autostart mechanism that reliably loads a CoreEMU scenario on boot, replacing the old, unreliable `rc.local` approach.
 
-To configure it:
+### Boot Sequence
+
+```
+System Boot
+  └─▶ systemd starts core-daemon.service
+        └─▶ core-autostart.service triggers
+              ├─ Polls systemctl until core-daemon is active (up to 60s)
+              ├─ Polls gRPC port 50051 until it is listening (up to 60s)
+              ├─ Waits 3s safety buffer
+              └─▶ Loads scenario via core-gui-legacy -b (8.2.0) or core-cli xml -f -s (9.2.1)
+```
+
+### Configuration
 
 1. Edit `/etc/core/autostart.conf` (accessible to all users):
    ```bash
@@ -70,9 +82,17 @@ To configure it:
    ```
 2. Uncomment the `SCENARIO_FILE` line and set the path to your topology file:
    ```bash
-   SCENARIO_FILE="/root/myscenario.xml"
+   SCENARIO_FILE="/root/myscenario.imn"
    ```
-3. Reboot. The `core-autostart.service` systemd unit will wait for `core-daemon` to be fully ready, then automatically load and start the scenario.
+3. Reboot. The scenario will load automatically once `core-daemon` and gRPC are confirmed ready.
+
+### Monitoring
+
+Check the autostart service status and logs:
+```bash
+systemctl status core-autostart
+journalctl -u core-autostart
+```
 
 > [!NOTE]
 > On 9.2.1, scenarios are loaded via `core-cli xml -f <file> -s`. On 8.2.0, scenarios are loaded via `core-gui-legacy -b <file>`.
