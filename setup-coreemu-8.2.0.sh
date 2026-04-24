@@ -45,6 +45,11 @@ sed -i 's/grpcio = "1.27.2"/grpcio = "1.43.0"/g' daemon/pyproject.toml
 sed -i 's/grpcio-tools = "1.27.2"/grpcio-tools = "1.43.0"/g' daemon/pyproject.toml
 sed -i 's/grpcio==1.27.2/grpcio==1.43.0/g' tasks.py
 sed -i 's/grpcio-tools==1.27.2/grpcio-tools==1.43.0/g' tasks.py
+
+# Upgrade other C-extension packages that lack Python 3.9 wheels to avoid source compilation errors
+sed -i 's/pyproj = "2.6.1.post1"/pyproj = "3.2.0"/g' daemon/pyproject.toml
+sed -i 's/lxml = "4.6.5"/lxml = "4.9.0"/g' daemon/pyproject.toml
+
 sed -i 's/requires = \["poetry>=0.12"\]/requires = ["poetry>=0.12", "setuptools"]/g' daemon/pyproject.toml
 rm -f daemon/poetry.lock
 
