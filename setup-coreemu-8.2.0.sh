@@ -73,6 +73,22 @@ export PATH="$HOME/.local/bin:$PATH"
 # We pass --no-ospf because we compile OSPF-MDR ourselves at the bottom of this script with the correct -fcommon flags.
 inv install -v -i debian --local --no-ospf
 
+echo "==> Installing CoreEMU runtime Python dependencies..."
+# The --local flag only installs the core wheel itself without its dependencies.
+# We must manually install them so that core-gui and core-daemon can actually run.
+python3 -m pip install \
+    grpcio==1.43.0 \
+    grpcio-tools==1.43.0 \
+    fabric==2.5.0 \
+    invoke==1.4.1 \
+    lxml==4.9.0 \
+    mako==1.1.3 \
+    netaddr==0.7.19 \
+    pillow==8.3.2 \
+    protobuf==3.19.4 \
+    pyproj==3.2.0 \
+    pyyaml==5.4
+
 echo "==> Enabling and starting core-daemon..."
 systemctl daemon-reload
 systemctl enable core-daemon
