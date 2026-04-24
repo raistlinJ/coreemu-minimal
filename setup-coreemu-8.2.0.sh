@@ -70,7 +70,8 @@ pipx inject poetry setuptools
 echo "==> Running Invoke installation (verbose mode)..."
 export PATH="$HOME/.local/bin:$PATH"
 # We pass --local to force a system-wide install via pip, completely bypassing Poetry's infinitely hanging resolver.
-inv install -v -i debian --local
+# We pass --no-ospf because we compile OSPF-MDR ourselves at the bottom of this script with the correct -fcommon flags.
+inv install -v -i debian --local --no-ospf
 
 echo "==> Enabling and starting core-daemon..."
 systemctl daemon-reload
