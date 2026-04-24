@@ -56,6 +56,11 @@ rm -f daemon/poetry.lock
 echo "==> Running CoreEMU 8.2.0 setup toolchain..."
 # Clean up existing pipx environments to prevent "already installed" crashes
 rm -rf ~/.local/pipx ~/.local/bin/invoke ~/.local/bin/poetry
+
+echo "==> Removing any existing core installations to prevent setup script crashes..."
+python3 -m pip uninstall -y core >/dev/null 2>&1 || true
+rm -f /usr/local/bin/core-* /usr/bin/core-*
+
 ./setup.sh
 
 echo "==> Injecting setuptools into Poetry to fix pkg_resources errors..."
