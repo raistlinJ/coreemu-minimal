@@ -17,6 +17,12 @@ echo "========================================="
 # Ensure sbin directories are in PATH (fixes "ldconfig not found" on minimal debian via sudo/su)
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
+# Make sbin PATH available to ALL users (root + regular) on login
+cat > /etc/profile.d/sbin-path.sh << 'EOF'
+export PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
+EOF
+chmod 644 /etc/profile.d/sbin-path.sh
+
 export DEBIAN_FRONTEND=noninteractive
 
 echo "==> Updating system packages..."
