@@ -64,7 +64,10 @@ Both scripts install a systemd-based autostart mechanism that reliably loads a C
 
 To configure it:
 
-1. Open `/root/Desktop/autostart.conf` in a text editor.
+1. Edit `/etc/core/autostart.conf` (accessible to all users):
+   ```bash
+   sudo nano /etc/core/autostart.conf
+   ```
 2. Uncomment the `SCENARIO_FILE` line and set the path to your topology file:
    ```bash
    SCENARIO_FILE="/root/myscenario.xml"
@@ -72,7 +75,7 @@ To configure it:
 3. Reboot. The `core-autostart.service` systemd unit will wait for `core-daemon` to be fully ready, then automatically load and start the scenario.
 
 > [!NOTE]
-> On 9.2.1, scenarios are loaded via `core-cli xml -f <file> -s`. On 8.2.0, they are loaded via `core-gui-legacy -b <file>`.
+> On 9.2.1, scenarios are loaded via `core-cli xml -f <file> -s`. On 8.2.0, scenarios are loaded via `core-gui-legacy -b <file>`.
 
 ## Troubleshooting
 

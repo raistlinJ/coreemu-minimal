@@ -89,30 +89,25 @@ systemctl enable core-daemon
 systemctl restart core-daemon
 
 echo "==> Configuring CoreEMU Autostart Service..."
-mkdir -p /root/Desktop
-cat << 'EOF' > /root/Desktop/autostart.conf
+mkdir -p /etc/core
+cat << 'EOF' > /etc/core/autostart.conf
 # CoreEMU Autostart Configuration
 # To run a scenario automatically on boot, uncomment the line below and specify the absolute path to your scenario file (.imn or .xml).
 # SCENARIO_FILE="/root/myscenario.imn"
 EOF
-chmod 644 /root/Desktop/autostart.conf
+chmod 644 /etc/core/autostart.conf
 
 cat << 'EOF' > /usr/local/bin/core-autostart
 #!/bin/bash
-CONFIG_FILE="/root/Desktop/autostart.conf"
+CONFIG_FILE="/etc/core/autostart.conf"
 
 if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
     if [ -n "$SCENARIO_FILE" ]; then
         if [ -f "$SCENARIO_FILE" ]; then
             echo "Autostarting CoreEMU scenario: $SCENARIO_FILE"
-            if command -v core-gui-legacy &> /dev/null; then
-                core-gui-legacy -b "$SCENARIO_FILE"
-            elif command -v core-gui &> /dev/null; then
-                core-gui -b "$SCENARIO_FILE"
-            else
-                echo "Error: core-gui not found."
-            fi
+            sleep 5  # Give core-daemon time to fully initialize
+            core-gui-legacy -b "$SCENARIO_FILE"
         else
             echo "Error: Scenario file $SCENARIO_FILE not found."
         fi
@@ -160,15 +155,8 @@ echo "==> Configuring CoreEMU for regular users..."
 # Detect the first non-root human user (UID >= 1000)
 REGULAR_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1; exit}' /etc/passwd)
 if [ -n "$REGULAR_USER" ]; then
-    REGULAR_HOME=$(eval echo "~$REGULAR_USER")
-    echo "==> Detected regular user: $REGULAR_USER ($REGULAR_HOME)"
-
-    # Copy autostart.conf to regular user's Desktop
-    mkdir -p "$REGULAR_HOME/Desktop"
-    cp /root/Desktop/autostart.conf "$REGULAR_HOME/Desktop/autostart.conf"
-    chown "$REGULAR_USER:$REGULAR_USER" "$REGULAR_HOME/Desktop/autostart.conf"
-
-    # Also install the core wheel for the regular user
+    echo "==> Detected regular user: $REGULAR_USER"
+    # Install the core wheel for the regular user so core-gui works under their account
     sudo -u "$REGULAR_USER" python3 -m pip install --user core 2>/dev/null || true
 else
     echo "==> No regular user detected, skipping user-level setup."
