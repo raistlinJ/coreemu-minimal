@@ -45,12 +45,17 @@ sed -i 's/grpcio = "1.27.2"/grpcio = "1.43.0"/g' daemon/pyproject.toml
 sed -i 's/grpcio-tools = "1.27.2"/grpcio-tools = "1.43.0"/g' daemon/pyproject.toml
 sed -i 's/grpcio==1.27.2/grpcio==1.43.0/g' tasks.py
 sed -i 's/grpcio-tools==1.27.2/grpcio-tools==1.43.0/g' tasks.py
+sed -i 's/requires = \["poetry>=0.12"\]/requires = ["poetry>=0.12", "setuptools"]/g' daemon/pyproject.toml
 rm -f daemon/poetry.lock
 
 echo "==> Running CoreEMU 8.2.0 setup toolchain..."
 # Clean up existing pipx environments to prevent "already installed" crashes
 rm -rf ~/.local/pipx ~/.local/bin/invoke ~/.local/bin/poetry
 ./setup.sh
+
+echo "==> Injecting setuptools into Poetry to fix pkg_resources errors..."
+export PATH="$HOME/.local/bin:$PATH"
+pipx inject poetry setuptools
 
 echo "==> Running Invoke installation (verbose mode)..."
 export PATH="$HOME/.local/bin:$PATH"
