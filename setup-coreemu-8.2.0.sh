@@ -135,6 +135,7 @@ rm -rf /tmp/ospf-mdr
 git clone https://github.com/USNavalResearchLaboratory/ospf-mdr.git /tmp/ospf-mdr
 cd /tmp/ospf-mdr
 ./bootstrap.sh
+export CFLAGS="-fcommon -ggdb"
 ./configure --disable-doc --enable-user=root --enable-group=root --with-cflags="-ggdb -fcommon" --sysconfdir=/usr/local/etc/quagga --enable-vtysh --localstatedir=/var/run/quagga
 make -j $(nproc)
 make install
