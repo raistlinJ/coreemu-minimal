@@ -1,54 +1,53 @@
 # CoreEMU Minimal
 
-An automated deployment script for provisioning a lightweight, production-ready CoreEMU environment on a minimal Debian 12 machine. 
+Automated deployment scripts for provisioning lightweight, production-ready CoreEMU environments on minimal Debian machines. Supports both the latest release (9.2.1 on Debian 12) and the legacy version (8.2.0 on Debian 11).
 
 ## Features
 
-- **Lightweight OS Base**: Designed specifically for the Debian 12 "netinst" minimal ISO.
-- **Docker Integration**: Automatically installs the Docker Engine and injects the `{"iptables": false}` fix into `/etc/docker/daemon.json` so Docker does not break CoreEMU's internal routing.
-- **Dynamic Installer**: Dynamically queries the GitHub API to fetch and install the latest CoreEMU release.
-- **Native Routing Engines**: Compiles and installs **OSPF-MDR** (the US Naval Research Laboratory's custom Quagga fork) from source to seamlessly provide the native `zebra` and `ospfd` routing engines that CoreEMU expects.
-- **Minimal GUI**: Installs an extremely lightweight desktop environment (XFCE and LightDM) to run the `core-gui` IDE directly on the VM without bogging down resources.
-- **Service Persistence**: Automatically enables the `core-daemon` systemd service so your emulator backend survives reboots.
+- **Lightweight OS Base**: Designed specifically for the Debian "netinst" minimal ISOs (no desktop pre-installed).
+- **Full Source Compilation (8.2.0)**: Compiles CoreEMU 8.2.0 and all dependencies from source with automatic patching for Python 3.9 compatibility.
+- **Docker Integration (9.2.1)**: Automatically installs the Docker Engine and injects the `{"iptables": false}` fix so Docker does not break CoreEMU's internal routing.
+- **Native Routing Engines**: Compiles and installs **OSPF-MDR** (the US Naval Research Laboratory's custom Quagga fork) from source to provide the native `zebra` and `ospfd` routing daemons that CoreEMU expects.
+- **Minimal GUI**: Installs an extremely lightweight desktop environment (XFCE + LightDM) to run `core-gui` directly on the VM.
+- **Service Persistence**: Automatically enables the `core-daemon` systemd service so the emulator backend survives reboots.
+- **Scenario Autostart (8.2.0)**: Includes a systemd-based autostart mechanism to automatically load a CoreEMU scenario on boot. Configure via `/root/Desktop/autostart.conf`.
+- **Idempotent & Re-runnable**: Scripts clean up cached build directories automatically so they can be safely re-run after a failure without manual intervention.
+- **Cleanup Utility**: Includes `cleanup.sh` to manually wipe all build caches and previously installed components for a fresh start.
 
 ## System Requirements
 
 For optimal performance and to ensure enough space for emulator artifacts, the following VM specifications are recommended:
-- **RAM**: 2GB minimum (4GB+ recommended if running heavy Docker nodes or large network topologies).
-- **Storage (HD)**: 15GB to 20GB minimum (The OS, GUI, and CoreEMU take about ~5GB; the remaining space is necessary for PCAP files, logs, and Docker images).
+- **RAM**: 2GB minimum (4GB+ recommended for large network topologies or Docker nodes).
+- **Storage (HD)**: 15–20GB minimum (the OS, GUI, and CoreEMU take ~5GB; remaining space is for PCAPs, logs, and Docker images).
 - **CPU**: 2 vCores minimum.
 
-## Deployment Instructions
+## Deployment — CoreEMU 9.2.1 (Debian 12)
 
-1. **Create the Environment**: Create a VM (or bare metal environment) and install the minimal [Debian 12 "netinst" ISO](https://www.debian.org/releases/bookworm/debian-installer/). When the installer prompts you for "Software selection", ensure only the following are checked:
+1. **Create the Environment**: Create a VM (or bare metal) and install the minimal [Debian 12 "netinst" ISO](https://www.debian.org/releases/bookworm/debian-installer/). When the installer prompts for "Software selection", ensure only the following are checked:
    - `[ ]` Debian desktop environment *(UNCHECK)*
    - `[ ]` GNOME *(UNCHECK)*
    - `[*] ` **SSH server** *(CHECK)*
    - `[*] ` **standard system utilities** *(CHECK)*
-2. **Download Script**: Install Git, clone this repository to your VM, and navigate into it:
+2. **Download & Run**:
    ```bash
    su -
    apt update && apt install -y git
    git clone https://github.com/raistlinJ/coreemu-minimal.git
    cd coreemu-minimal
-   ```
-3. **Execute**: Run the script:
-   ```bash
    ./setup-coreemu9.2.1.sh
    ```
-4. **Reboot**: Once finished, reboot the machine.
-5. **Access GUI**: Access the machine's display console (e.g., hypervisor web console or physical monitor) to view the graphical LightDM login screen. Log in, open a terminal, and run `core-gui`.
+3. **Reboot**: The script will prompt you to reboot when finished.
+4. **Access GUI**: Log in via the LightDM graphical login screen, open a terminal, and run `core-gui`.
 
-## Legacy Version Support (CoreEMU 8.2.0)
+## Deployment — CoreEMU 8.2.0 (Debian 11)
 
-If you require the legacy interface (`core-gui-legacy`) to fine-tune custom services, you must use version 8.2.0. Because 8.2.0 relies on older dependencies, you **must use a Debian 11 (Bullseye)** machine.
+If you require the legacy interface (`core-gui-legacy`) to manage custom services, you must use version 8.2.0. Because 8.2.0 relies on older dependencies, you **must use a Debian 11 (Bullseye)** machine.
 
 > [!NOTE]
-> CoreEMU 8.2.0 does not natively support Docker nodes. As such, the legacy `setup-coreemu-8.2.0.sh` script does **not** install the Docker Engine.
+> CoreEMU 8.2.0 does not support Docker nodes. The legacy script does **not** install the Docker Engine.
 
-To deploy the legacy version:
-1. Create a minimal VM using the [**Debian 11** netinst ISO](https://www.debian.org/releases/bullseye/debian-installer/).
-2. Download the repository and run the `setup-coreemu-8.2.0.sh` script instead of the default script:
+1. **Create the Environment**: Create a minimal VM using the [**Debian 11** netinst ISO](https://www.debian.org/releases/bullseye/debian-installer/).
+2. **Download & Run**:
    ```bash
    su -
    apt update && apt install -y git
@@ -56,3 +55,24 @@ To deploy the legacy version:
    cd coreemu-minimal
    ./setup-coreemu-8.2.0.sh
    ```
+3. **Reboot**: The script will prompt you to reboot when finished.
+4. **Access GUI**: Log in via LightDM, open a terminal, and run `core-gui`.
+
+### Scenario Autostart (8.2.0)
+
+To automatically load a CoreEMU scenario on boot:
+
+1. Open `/root/Desktop/autostart.conf` in a text editor.
+2. Uncomment the `SCENARIO_FILE` line and set the path to your `.imn` or `.xml` topology file:
+   ```bash
+   SCENARIO_FILE="/root/myscenario.imn"
+   ```
+3. Reboot. The scenario will load automatically via a systemd service that waits for `core-daemon` to be fully ready.
+
+## Troubleshooting
+
+If an installation fails mid-way and you need to start fresh, run the cleanup utility before re-running the setup script:
+```bash
+./cleanup.sh
+```
+This removes all cached build directories (`/tmp/core`, `/tmp/ospf-mdr`), previously installed `core` Python packages, and leftover `pipx` environments.
