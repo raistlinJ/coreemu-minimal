@@ -19,6 +19,14 @@ if [ -z "$REPO_URL" ]; then
     exit 1
 fi
 
+echo "==> Ensuring core-daemon is stopped..."
+if systemctl is-active --quiet core-daemon; then
+    systemctl stop core-daemon
+    echo "    core-daemon stopped."
+else
+    echo "    core-daemon is already stopped."
+fi
+
 echo "==> Cloning $REPO_URL ($BRANCH)..."
 rm -rf /tmp/core-source
 git clone "$REPO_URL" /tmp/core-source
@@ -69,8 +77,13 @@ echo "    Copied to $SITE_PACKAGES/core/"
 echo "==> Cleaning up..."
 rm -rf /tmp/core-source
 
-echo "==> Restarting core-daemon service..."
-systemctl restart core-daemon
-
 echo "==> Success! CoreEMU has been updated from source."
 echo "Note: This updated the Python daemon and CLI. If you modified C-based binaries (vcmd/vnoded), you may still need a full rebuild."
+echo ""
+read -p "Would you like to start core-daemon now? (y/N): " START_CHOICE
+if [[ "$START_CHOICE" =~ ^[Yy]$ ]]; then
+    systemctl start core-daemon
+    echo "core-daemon started."
+else
+    echo "core-daemon is stopped. Start it manually with: systemctl start core-daemon"
+fi
