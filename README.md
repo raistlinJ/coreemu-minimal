@@ -28,7 +28,7 @@ For optimal performance and to ensure enough space for emulator artifacts, the f
    - `[ ]` GNOME *(UNCHECK)*
    - `[*] ` **SSH server** *(CHECK)*
    - `[*] ` **standard system utilities** *(CHECK)*
-2. **Download & Run**:
+2. **Download & Run** (`.deb` install — recommended for most users):
    ```bash
    su -
    apt update && apt install -y git
@@ -36,7 +36,13 @@ For optimal performance and to ensure enough space for emulator artifacts, the f
    cd coreemu-minimal
    ./setup-coreemu9.2.1.sh [CUSTOM_DEB_URL]
    ```
-   *(Optional: Pass a direct URL to a `.deb` package as the first argument to bypass the GitHub API latest-release check.)*
+   *(Optional: Pass a direct URL to a `.deb` package to bypass the GitHub API.)*
+
+   **Or install from source** (recommended for developers working with forks):
+   ```bash
+   ./setup-coreemu9.2.1.sh --from-source [REPO_URL] [BRANCH]
+   ```
+   This clones the repo to `/opt/core/source/`, builds everything from scratch, and enables fast `git pull` updates via `update-core9-source.sh`.
 3. **Reboot**: The script will prompt you to reboot when finished.
 4. **Access GUI**: Log in via the LightDM graphical login screen, open a terminal, and run `core-gui`.
 
@@ -103,32 +109,35 @@ journalctl -u core-autostart
 
 The setup scripts are designed to be idempotent and can be safely re-run to update CoreEMU or repair a broken installation.
 
-### How to Update
+### Updating a .deb Installation
 
-To update to the latest version of CoreEMU, simply pull the latest changes from this repository and run the appropriate setup script again:
-
+Re-run the setup script to fetch and install the latest release:
 ```bash
-git pull
 ./setup-coreemu9.2.1.sh
 ```
 
-**What happens during an update:**
-- **CoreEMU 9.2.1**: The script fetches the latest release URL from GitHub. `apt` will automatically upgrade the installation if a newer version is available.
-- **CoreEMU 8.2.0**: The script wipes the temporary source directory, clones the latest code, and performs a clean rebuild.
-- **Optimized Re-runs**: The scripts skip time-consuming steps (like Docker installation or OSPF-MDR compilation) if they are already present on the system.
+### Updating a Source Installation (9.2.1+)
 
-### Fresh Start
-
-If an installation fails or you want to start from a completely clean state, use the cleanup utility before re-running the setup:
-
-### Source-Based Updates for Developers (9.2.1+)
-Added [update-core9-source.sh](update-core9-source.sh), which allows for the most efficient code updates:
-
+If you installed with `--from-source`, simply run:
 ```bash
-sudo ./update-core9-source.sh https://github.com/youruser/core.git my-branch
+sudo ./update-core9-source.sh
 ```
 
 This will:
-1. Clone your fork to a temporary directory.
-2. Install the updated Python `core` package directly into your system.
-3. Restart the `core-daemon` service to apply your changes.
+1. `git pull` the latest changes from your fork at `/opt/core/source/`.
+2. Regenerate `constants.py` and protobuf stubs.
+3. Reinstall the `core` package into the venv.
+4. Prompt you to restart `core-daemon`.
+
+To update your fork's remote or switch branches, use standard git commands in `/opt/core/source/` before running the update script.
+
+### Updating CoreEMU 8.2.0
+
+Re-run the setup script with your fork's URL:
+```bash
+sudo ./setup-coreemu-8.2.0.sh [REPO_URL] [BRANCH]
+```
+
+### Fresh Start
+
+If an installation fails or you want a completely clean state, run `cleanup.sh` before re-running the setup script.

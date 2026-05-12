@@ -69,40 +69,164 @@ else
     echo "==> Docker is already installed, skipping installation."
 fi
 
-echo "==> Fetching CoreEMU release..."
-# Check if a custom URL was provided as an argument
-CORE_URL="$1"
+# =========================================
+# CoreEMU Installation
+# =========================================
 
-if [ -z "$CORE_URL" ]; then
-    echo "No URL provided, fetching latest release from GitHub..."
-    # Use GitHub API to find the latest non-distributed amd64 deb package
-    CORE_URL=$(curl -s https://api.github.com/repos/coreemu/core/releases/latest | jq -r '.assets[] | select(.name | endswith("_amd64.deb") and (contains("distributed") | not)) | .browser_download_url' | head -n 1)
+FROM_SOURCE=false
+CORE_ARG1=""
+CORE_ARG2=""
 
-    if [ -z "$CORE_URL" ] || [ "$CORE_URL" = "null" ]; then
-        echo "Warning: Failed to fetch the latest release URL from GitHub."
-        echo "Defaulting to CoreEMU 9.2.1."
-        CORE_URL="https://github.com/coreemu/core/releases/download/release-9.2.1/core_9.2.1_amd64.deb"
+# Parse arguments: detect --from-source flag
+for arg in "$@"; do
+    if [ "$arg" = "--from-source" ]; then
+        FROM_SOURCE=true
+    elif [ -z "$CORE_ARG1" ]; then
+        CORE_ARG1="$arg"
+    elif [ -z "$CORE_ARG2" ]; then
+        CORE_ARG2="$arg"
     fi
+done
+
+if [ "$FROM_SOURCE" = true ]; then
+    # =========================================
+    # Source-based installation (for developers)
+    # =========================================
+    CORE_REPO="${CORE_ARG1:-https://github.com/coreemu/core.git}"
+    CORE_BRANCH="${CORE_ARG2:-release-9.2.1}"
+    CORE_SOURCE_DIR="/opt/core/source"
+    CORE_VENV="/opt/core/venv"
+
+    echo "==> Installing CoreEMU from source ($CORE_REPO @ $CORE_BRANCH)..."
+
+    # Clone or update the source
+    if [ -d "$CORE_SOURCE_DIR/.git" ]; then
+        echo "    Source directory exists, pulling latest..."
+        cd "$CORE_SOURCE_DIR"
+        git fetch --all
+        git checkout "$CORE_BRANCH"
+        git pull origin "$CORE_BRANCH" || true
+    else
+        echo "    Cloning repository..."
+        rm -rf "$CORE_SOURCE_DIR"
+        mkdir -p /opt/core
+        git clone "$CORE_REPO" "$CORE_SOURCE_DIR"
+        cd "$CORE_SOURCE_DIR"
+        git checkout "$CORE_BRANCH"
+    fi
+
+    # Create venv
+    echo "==> Creating virtual environment at $CORE_VENV..."
+    python3 -m venv "$CORE_VENV"
+
+    # Install dependencies from pyproject.toml
+    echo "==> Installing Python dependencies..."
+    "$CORE_VENV/bin/pip" install --upgrade pip
+    "$CORE_VENV/bin/pip" install \
+        "fabric==3.2.2" "grpcio==1.69.0" "invoke==2.2.0" "lxml==5.2.2" \
+        "netaddr==0.10.1" "protobuf==5.29.3" "pyproj==3.6.1" "Mako==1.2.3" \
+        "PyYAML==6.0.1" "pillow==11.1.0" "grpcio-tools==1.69.0"
+
+    # Generate constants.py from template
+    echo "==> Generating constants.py..."
+    CONSTANTS_TEMPLATE="$CORE_SOURCE_DIR/daemon/core/constants.py.in"
+    if [ -f "$CONSTANTS_TEMPLATE" ]; then
+        CORE_VERSION=$(grep 'version' "$CORE_SOURCE_DIR/daemon/pyproject.toml" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+        sed \
+            -e "s|@PACKAGE_VERSION@|$CORE_VERSION|g" \
+            -e "s|@CORE_CONF_DIR@|/etc/core|g" \
+            -e "s|@CORE_DATA_DIR@|/opt/core/share|g" \
+            "$CONSTANTS_TEMPLATE" > "$CORE_SOURCE_DIR/daemon/core/constants.py"
+        echo "    Generated constants.py (version=$CORE_VERSION)"
+    fi
+
+    # Compile protobuf stubs
+    echo "==> Compiling protobuf/gRPC stubs..."
+    PROTO_ROOT="$CORE_SOURCE_DIR/daemon/proto"
+    PROTO_FILES="$PROTO_ROOT/core/api/grpc"
+    if [ -d "$PROTO_FILES" ]; then
+        "$CORE_VENV/bin/python" -m grpc_tools.protoc \
+            --proto_path="$PROTO_ROOT" \
+            --python_out="$CORE_SOURCE_DIR/daemon" \
+            --grpc_python_out="$CORE_SOURCE_DIR/daemon" \
+            "$PROTO_FILES"/*.proto
+        echo "    Compiled $(ls "$PROTO_FILES"/*.proto | wc -l) proto files."
+    fi
+
+    # Install core package
+    echo "==> Installing core daemon into venv..."
+    cd "$CORE_SOURCE_DIR/daemon"
+    "$CORE_VENV/bin/pip" install .
+
+    # Create symlinks for CLI tools
+    echo "==> Creating CLI symlinks..."
+    for cmd in core-daemon core-cli core-gui core-player core-route-monitor core-service-update core-cleanup; do
+        if [ -f "$CORE_VENV/bin/$cmd" ]; then
+            ln -sf "$CORE_VENV/bin/$cmd" "/usr/bin/$cmd"
+        fi
+    done
+
+    # Copy data files (GUI assets, default services, etc.)
+    echo "==> Installing data files..."
+    mkdir -p /opt/core/share
+    if [ -d "$CORE_SOURCE_DIR/daemon/data" ]; then
+        cp -r "$CORE_SOURCE_DIR/daemon/data/"* /opt/core/share/ 2>/dev/null || true
+    fi
+
+    # Create systemd service for core-daemon
+    echo "==> Configuring core-daemon systemd service..."
+    cat > /etc/systemd/system/core-daemon.service << 'DAEMON_SERVICE'
+[Unit]
+Description=CORE Daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/core/venv/bin/core-daemon
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target
+DAEMON_SERVICE
+
 else
-    echo "Using user-specified CoreEMU URL: $CORE_URL"
+    # =========================================
+    # .deb-based installation (default)
+    # =========================================
+    echo "==> Fetching CoreEMU release..."
+    CORE_URL="$CORE_ARG1"
+
+    if [ -z "$CORE_URL" ]; then
+        echo "No URL provided, fetching latest release from GitHub..."
+        CORE_URL=$(curl -s https://api.github.com/repos/coreemu/core/releases/latest | jq -r '.assets[] | select(.name | endswith("_amd64.deb") and (contains("distributed") | not)) | .browser_download_url' | head -n 1)
+
+        if [ -z "$CORE_URL" ] || [ "$CORE_URL" = "null" ]; then
+            echo "Warning: Failed to fetch the latest release URL from GitHub."
+            echo "Defaulting to CoreEMU 9.2.1."
+            CORE_URL="https://github.com/coreemu/core/releases/download/release-9.2.1/core_9.2.1_amd64.deb"
+        fi
+    else
+        echo "Using user-specified CoreEMU URL: $CORE_URL"
+    fi
+
+    echo "==> Downloading CoreEMU from $CORE_URL"
+    wget -qO coreemu.deb "$CORE_URL"
+
+    echo "==> Installing CoreEMU and system dependencies..."
+    apt-get install -y ./coreemu.deb
+
+    echo "==> Cleaning up..."
+    rm coreemu.deb
 fi
 
-echo "==> Downloading CoreEMU from $CORE_URL"
-wget -qO coreemu.deb "$CORE_URL"
-
-echo "==> Installing CoreEMU and system dependencies..."
-# Using apt install ./package.deb automatically resolves and installs dependencies
-apt-get install -y ./coreemu.deb
-
-echo "==> Enabling and starting core-daemon..."
-systemctl enable core-daemon
-systemctl restart core-daemon
+# =========================================
+# Common post-install steps (both .deb and source)
+# =========================================
 
 echo "==> Compiling and Installing OSPF-MDR (Zebra)..."
 if [ -f "/usr/local/sbin/zebra" ]; then
     echo "OSPF-MDR (Zebra) is already installed, skipping compilation."
 else
-    # CoreEMU natively expects Zebra from Quagga/OSPF-MDR
     rm -rf /tmp/ospf-mdr
     git clone https://github.com/USNavalResearchLaboratory/ospf-mdr.git /tmp/ospf-mdr
     cd /tmp/ospf-mdr
@@ -115,8 +239,10 @@ else
     rm -rf /tmp/ospf-mdr
 fi
 
-echo "==> Cleaning up..."
-rm coreemu.deb
+echo "==> Enabling and starting core-daemon..."
+systemctl daemon-reload
+systemctl enable core-daemon
+systemctl restart core-daemon
 
 # =========================================
 # Scenario Autostart Configuration
