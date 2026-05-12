@@ -46,12 +46,30 @@ fi
 echo "==> Installing build tools..."
 "$CORE_VENV/bin/pip" install grpcio-tools
 
-echo "==> Compiling protobuf/gRPC stubs..."
+echo "==> Generating build artifacts..."
 REPO_ROOT="/tmp/core-source"
+SOURCE_CORE="$REPO_ROOT/daemon/core"
+
+# 1. Generate constants.py from constants.py.in template
+#    The source only has constants.py.in with placeholders like @PACKAGE_VERSION@.
+#    The .deb build fills these in. We do it here with the installed values.
+CONSTANTS_TEMPLATE="$SOURCE_CORE/constants.py.in"
+if [ -f "$CONSTANTS_TEMPLATE" ]; then
+    echo "    Generating constants.py from template..."
+    CORE_VERSION=$(cat "$REPO_ROOT/package.json" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('version','9.2.1'))" 2>/dev/null || echo "9.2.1")
+    sed \
+        -e "s|@PACKAGE_VERSION@|$CORE_VERSION|g" \
+        -e "s|@CORE_CONF_DIR@|/etc/core|g" \
+        -e "s|@CORE_DATA_DIR@|/opt/core/share|g" \
+        "$CONSTANTS_TEMPLATE" > "$SOURCE_CORE/constants.py"
+    echo "    Generated constants.py (version=$CORE_VERSION)"
+fi
+
+# 2. Compile protobuf/gRPC stubs (_pb2.py and _pb2_grpc.py)
 PROTO_ROOT="$REPO_ROOT/daemon/proto"
 PROTO_FILES="$PROTO_ROOT/core/api/grpc"
-
 if [ -d "$PROTO_FILES" ]; then
+    echo "    Compiling protobuf stubs..."
     "$CORE_VENV/bin/python" -m grpc_tools.protoc \
         --proto_path="$PROTO_ROOT" \
         --python_out="$REPO_ROOT/daemon" \
@@ -59,7 +77,7 @@ if [ -d "$PROTO_FILES" ]; then
         "$PROTO_FILES"/*.proto
     echo "    Compiled $(ls "$PROTO_FILES"/*.proto | wc -l) proto files."
 else
-    echo "    WARNING: No proto files found at $PROTO_FILES, skipping stub generation."
+    echo "    WARNING: No proto files found, skipping stub generation."
 fi
 
 echo "==> Overlaying updated source into CoreEMU venv..."
@@ -67,35 +85,8 @@ SITE_PACKAGES="$CORE_VENV/lib/python3.11/site-packages"
 if [ ! -d "$SITE_PACKAGES" ]; then
     SITE_PACKAGES=$("$CORE_VENV/bin/python" -c "import site; print(site.getsitepackages()[0])")
 fi
-INSTALLED_CORE="$SITE_PACKAGES/core"
-SOURCE_CORE="$REPO_ROOT/daemon/core"
-
-# Back up generated/build-configured files (e.g. constants.py from constants.py.in).
-# These exist in the installed package but NOT in the raw source. Without this backup,
-# cp -r would delete them since the source directory replaces the destination.
-BACKUP_DIR="/tmp/core-generated-backup"
-rm -rf "$BACKUP_DIR"
-mkdir -p "$BACKUP_DIR"
-echo "    Backing up generated files..."
-BACKUP_COUNT=0
-cd "$INSTALLED_CORE"
-find . -name "*.py" -o -name "*.so" -o -name "*.pyc" | while read f; do
-    if [ ! -f "$SOURCE_CORE/$f" ]; then
-        mkdir -p "$BACKUP_DIR/$(dirname "$f")"
-        cp "$f" "$BACKUP_DIR/$f"
-    fi
-done
-BACKUP_COUNT=$(find "$BACKUP_DIR" -type f 2>/dev/null | wc -l)
-echo "    Backed up $BACKUP_COUNT generated files."
-
-# Copy source files over the installation
 cp -r "$SOURCE_CORE" "$SITE_PACKAGES/"
-
-# Restore generated files
-cp -a "$BACKUP_DIR/." "$INSTALLED_CORE/"
-echo "    Restored generated files."
-rm -rf "$BACKUP_DIR"
-echo "    Updated $INSTALLED_CORE"
+echo "    Updated $SITE_PACKAGES/core/"
 
 echo "==> Cleaning up..."
 rm -rf /tmp/core-source
