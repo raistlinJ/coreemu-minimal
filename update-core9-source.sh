@@ -76,7 +76,7 @@ cd "$CORE_SOURCE_DIR/daemon"
 SITE_PACKAGES=$("$CORE_VENV/bin/python" -c "import site; print(site.getsitepackages()[0])")
 echo "==> Copying generated artifacts to $SITE_PACKAGES/core/ ..."
 cp "$CORE_SOURCE_DIR/daemon/core/constants.py" "$SITE_PACKAGES/core/"
-cp "$PROTO_FILES"/*_pb2*.py "$SITE_PACKAGES/core/api/grpc/"
+cp "$CORE_SOURCE_DIR/daemon/core/api/grpc/"*_pb2*.py "$SITE_PACKAGES/core/api/grpc/"
 
 echo "==> Success! CoreEMU has been updated."
 echo ""
