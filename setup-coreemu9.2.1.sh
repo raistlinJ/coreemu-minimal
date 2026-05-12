@@ -35,7 +35,7 @@ apt-get update
 apt-get upgrade -y
 
 echo "==> Installing basic CLI tools, dependencies, and network daemons..."
-apt-get install -y sudo curl wget jq git vim nano htop net-tools build-essential ca-certificates software-properties-common tcpdump tshark python-is-python3 python3-full python3-venv python3-pip python3.11-venv python3-tk libtool gawk libreadline-dev automake pkg-config
+apt-get install -y sudo curl wget jq git vim nano htop net-tools build-essential ca-certificates software-properties-common tcpdump tshark python-is-python3 python3-full python3-venv python3-pip python3.11-venv python3-tk libtool gawk libreadline-dev automake pkg-config ethtool libev-dev nftables
 
 echo "==> Installing minimal graphical environment (XFCE)..."
 apt-get install -y xorg xfce4 lightdm dbus-x11 x11-utils xterm
