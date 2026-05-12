@@ -25,13 +25,24 @@ git clone "$REPO_URL" /tmp/core-source
 cd /tmp/core-source
 git checkout "$BRANCH"
 
-echo "==> Installing CoreEMU Python daemon from source..."
+echo "==> Detecting CoreEMU virtual environment..."
+# The .deb package installs CoreEMU into its own venv with all dependencies (grpcio, netaddr, etc.).
+# We must install into THAT venv so our updated code can find them.
+CORE_VENV="/opt/core/venv"
+if [ ! -d "$CORE_VENV" ]; then
+    echo "ERROR: CoreEMU venv not found at $CORE_VENV"
+    echo "Make sure CoreEMU was initially installed via the .deb package (setup-coreemu9.2.1.sh)."
+    exit 1
+fi
+
+echo "==> Installing CoreEMU Python daemon into $CORE_VENV..."
 cd daemon
-# --no-deps: Only overwrite the CoreEMU code itself. All dependencies (grpcio, protobuf, etc.)
-# were already installed correctly by the original .deb package. Without this flag, pip would
-# try to pull/replace dependencies and break the system Python environment.
-# --break-system-packages: Required on Debian 12+ to install into the system-managed Python.
-python3 -m pip install --no-deps --break-system-packages .
+# Install into the .deb's venv where all dependencies already exist.
+# --no-deps ensures we only overwrite CoreEMU code without touching the existing dependency tree.
+"$CORE_VENV/bin/pip" install --no-deps .
+
+echo "==> Cleaning up..."
+rm -rf /tmp/core-source
 
 echo "==> Restarting core-daemon service..."
 systemctl restart core-daemon
