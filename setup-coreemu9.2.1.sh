@@ -115,6 +115,14 @@ if [ "$FROM_SOURCE" = true ]; then
         git checkout "$CORE_BRANCH"
     fi
 
+    # Build and install C binaries (vcmd, vnoded, etc.)
+    echo "==> Building CoreEMU C binaries..."
+    cd "$CORE_SOURCE_DIR"
+    ./bootstrap.sh
+    ./configure --prefix=/usr
+    make -j$(nproc)
+    make install
+
     # Create venv
     echo "==> Creating virtual environment at $CORE_VENV..."
     python3 -m venv "$CORE_VENV"
