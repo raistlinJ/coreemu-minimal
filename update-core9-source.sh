@@ -39,16 +39,11 @@ echo "==> Installing build tools..."
 "$CORE_VENV/bin/pip" install grpcio-tools
 
 echo "==> Compiling protobuf/gRPC stubs..."
-# The _pb2.py and _pb2_grpc.py files are generated from .proto definitions.
-# The .deb build process creates these, but they don't exist in raw source.
 REPO_ROOT="/tmp/core-source"
 PROTO_ROOT="$REPO_ROOT/daemon/proto"
 PROTO_FILES="$PROTO_ROOT/core/api/grpc"
 
 if [ -d "$PROTO_FILES" ]; then
-    # --proto_path=daemon/proto  -> protoc resolves imports from here
-    # --python_out=daemon/       -> generated files land at daemon/core/api/grpc/*_pb2.py
-    #                               matching the Python import: from core.api.grpc import common_pb2
     "$CORE_VENV/bin/python" -m grpc_tools.protoc \
         --proto_path="$PROTO_ROOT" \
         --python_out="$REPO_ROOT/daemon" \
@@ -59,9 +54,17 @@ else
     echo "    WARNING: No proto files found at $PROTO_FILES, skipping stub generation."
 fi
 
-echo "==> Installing CoreEMU Python daemon into $CORE_VENV..."
-cd "$REPO_ROOT/daemon"
-"$CORE_VENV/bin/pip" install --no-deps .
+echo "==> Overlaying updated source into CoreEMU venv..."
+# Directly copy the core package into the venv's site-packages.
+# This is more reliable than pip install, which builds a wheel that may
+# exclude generated _pb2.py files. Direct copy preserves everything.
+SITE_PACKAGES="$CORE_VENV/lib/python3.11/site-packages"
+if [ ! -d "$SITE_PACKAGES" ]; then
+    # Fallback: find the actual site-packages path
+    SITE_PACKAGES=$("$CORE_VENV/bin/python" -c "import site; print(site.getsitepackages()[0])")
+fi
+cp -r "$REPO_ROOT/daemon/core" "$SITE_PACKAGES/"
+echo "    Copied to $SITE_PACKAGES/core/"
 
 echo "==> Cleaning up..."
 rm -rf /tmp/core-source
