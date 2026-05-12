@@ -27,9 +27,11 @@ git checkout "$BRANCH"
 
 echo "==> Installing CoreEMU Python daemon from source..."
 cd daemon
-# On Debian 12+, we need --break-system-packages to override the system-managed python protection.
-# Since CoreEMU daemon runs as a system service, this is the appropriate way to update it.
-python3 -m pip install . --break-system-packages
+# --no-deps: Only overwrite the CoreEMU code itself. All dependencies (grpcio, protobuf, etc.)
+# were already installed correctly by the original .deb package. Without this flag, pip would
+# try to pull/replace dependencies and break the system Python environment.
+# --break-system-packages: Required on Debian 12+ to install into the system-managed Python.
+python3 -m pip install --no-deps --break-system-packages .
 
 echo "==> Restarting core-daemon service..."
 systemctl restart core-daemon
