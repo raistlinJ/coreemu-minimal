@@ -115,14 +115,6 @@ if [ "$FROM_SOURCE" = true ]; then
         git checkout "$CORE_BRANCH"
     fi
 
-    # Build and install C binaries (vcmd, vnoded, etc.)
-    echo "==> Building CoreEMU C binaries..."
-    cd "$CORE_SOURCE_DIR"
-    ./bootstrap.sh
-    ./configure --prefix=/usr
-    make -j$(nproc)
-    make install
-
     # Create venv
     echo "==> Creating virtual environment at $CORE_VENV..."
     python3 -m venv "$CORE_VENV"
@@ -134,6 +126,16 @@ if [ "$FROM_SOURCE" = true ]; then
         "fabric==3.2.2" "grpcio==1.69.0" "invoke==2.2.0" "lxml==5.2.2" \
         "netaddr==0.10.1" "protobuf==5.29.3" "pyproj==3.6.1" "Mako==1.2.3" \
         "PyYAML==6.0.1" "pillow==11.1.0" "grpcio-tools==1.69.0"
+
+    # Build and install C binaries (vcmd, vnoded, etc.)
+    # The configure script expects a local 'venv' directory with grpcio-tools installed
+    echo "==> Building CoreEMU C binaries..."
+    cd "$CORE_SOURCE_DIR"
+    ln -sf "$CORE_VENV" "$CORE_SOURCE_DIR/venv"
+    ./bootstrap.sh
+    ./configure --prefix=/usr
+    make -j$(nproc)
+    make install
 
     # Generate constants.py from template
     echo "==> Generating constants.py..."
