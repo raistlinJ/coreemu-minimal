@@ -35,8 +35,25 @@ if [ ! -d "$CORE_VENV" ]; then
     exit 1
 fi
 
-echo "==> Installing CoreEMU Python daemon into $CORE_VENV..."
+echo "==> Compiling protobuf/gRPC stubs..."
 cd daemon
+# The _pb2.py and _pb2_grpc.py files are generated from .proto definitions.
+# The .deb build process creates these, but they don't exist in raw source.
+# We must compile them before installing.
+PROTO_DIR="proto"
+OUT_DIR="core/api/grpc"
+if [ -d "$PROTO_DIR" ]; then
+    "$CORE_VENV/bin/python" -m grpc_tools.protoc \
+        -I "$PROTO_DIR" \
+        --python_out="$OUT_DIR" \
+        --grpc_python_out="$OUT_DIR" \
+        "$PROTO_DIR"/*.proto
+    echo "    Compiled $(ls "$PROTO_DIR"/*.proto | wc -l) proto files."
+else
+    echo "    WARNING: No proto directory found, skipping stub generation."
+fi
+
+echo "==> Installing CoreEMU Python daemon into $CORE_VENV..."
 # Install into the .deb's venv where all dependencies already exist.
 # --no-deps ensures we only overwrite CoreEMU code without touching the existing dependency tree.
 "$CORE_VENV/bin/pip" install --no-deps .
