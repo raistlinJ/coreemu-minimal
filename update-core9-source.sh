@@ -71,6 +71,13 @@ echo "==> Reinstalling core daemon..."
 cd "$CORE_SOURCE_DIR/daemon"
 "$CORE_VENV/bin/pip" install .
 
+# Poetry excludes git-ignored generated files when building the wheel for pip.
+# We must manually copy them into the venv's site-packages.
+SITE_PACKAGES=$("$CORE_VENV/bin/python" -c "import site; print(site.getsitepackages()[0])")
+echo "==> Copying generated artifacts to $SITE_PACKAGES/core/ ..."
+cp "$CORE_SOURCE_DIR/daemon/core/constants.py" "$SITE_PACKAGES/core/"
+cp "$PROTO_FILES"/*_pb2*.py "$SITE_PACKAGES/core/api/grpc/"
+
 echo "==> Success! CoreEMU has been updated."
 echo ""
 read -p "Would you like to start core-daemon now? (y/N): " START_CHOICE
