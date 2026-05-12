@@ -173,11 +173,16 @@ if [ "$FROM_SOURCE" = true ]; then
         fi
     done
 
-    # Copy data files (GUI assets, default services, etc.)
-    echo "==> Installing data files..."
+    # Copy config and data files
+    echo "==> Installing configuration and data files..."
+    mkdir -p /etc/core
+    if [ -d "$CORE_SOURCE_DIR/package/etc" ]; then
+        cp -n "$CORE_SOURCE_DIR/package/etc/"* /etc/core/ 2>/dev/null || true
+    fi
+
     mkdir -p /opt/core/share
-    if [ -d "$CORE_SOURCE_DIR/daemon/data" ]; then
-        cp -r "$CORE_SOURCE_DIR/daemon/data/"* /opt/core/share/ 2>/dev/null || true
+    if [ -d "$CORE_SOURCE_DIR/package/share" ]; then
+        cp -r "$CORE_SOURCE_DIR/package/share/"* /opt/core/share/ 2>/dev/null || true
     fi
 
     # Create systemd service for core-daemon
