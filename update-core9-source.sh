@@ -35,6 +35,9 @@ if [ ! -d "$CORE_VENV" ]; then
     exit 1
 fi
 
+echo "==> Installing build tools..."
+"$CORE_VENV/bin/pip" install grpcio-tools
+
 echo "==> Compiling protobuf/gRPC stubs..."
 cd daemon
 # The _pb2.py and _pb2_grpc.py files are generated from .proto definitions.
