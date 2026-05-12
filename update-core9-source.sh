@@ -63,16 +63,39 @@ else
 fi
 
 echo "==> Overlaying updated source into CoreEMU venv..."
-# Directly copy the core package into the venv's site-packages.
-# This is more reliable than pip install, which builds a wheel that may
-# exclude generated _pb2.py files. Direct copy preserves everything.
 SITE_PACKAGES="$CORE_VENV/lib/python3.11/site-packages"
 if [ ! -d "$SITE_PACKAGES" ]; then
-    # Fallback: find the actual site-packages path
     SITE_PACKAGES=$("$CORE_VENV/bin/python" -c "import site; print(site.getsitepackages()[0])")
 fi
-cp -r "$REPO_ROOT/daemon/core" "$SITE_PACKAGES/"
-echo "    Copied to $SITE_PACKAGES/core/"
+INSTALLED_CORE="$SITE_PACKAGES/core"
+SOURCE_CORE="$REPO_ROOT/daemon/core"
+
+# Back up generated/build-configured files (e.g. constants.py from constants.py.in).
+# These exist in the installed package but NOT in the raw source. Without this backup,
+# cp -r would delete them since the source directory replaces the destination.
+BACKUP_DIR="/tmp/core-generated-backup"
+rm -rf "$BACKUP_DIR"
+mkdir -p "$BACKUP_DIR"
+echo "    Backing up generated files..."
+BACKUP_COUNT=0
+cd "$INSTALLED_CORE"
+find . -name "*.py" -o -name "*.so" -o -name "*.pyc" | while read f; do
+    if [ ! -f "$SOURCE_CORE/$f" ]; then
+        mkdir -p "$BACKUP_DIR/$(dirname "$f")"
+        cp "$f" "$BACKUP_DIR/$f"
+    fi
+done
+BACKUP_COUNT=$(find "$BACKUP_DIR" -type f 2>/dev/null | wc -l)
+echo "    Backed up $BACKUP_COUNT generated files."
+
+# Copy source files over the installation
+cp -r "$SOURCE_CORE" "$SITE_PACKAGES/"
+
+# Restore generated files
+cp -a "$BACKUP_DIR/." "$INSTALLED_CORE/"
+echo "    Restored generated files."
+rm -rf "$BACKUP_DIR"
+echo "    Updated $INSTALLED_CORE"
 
 echo "==> Cleaning up..."
 rm -rf /tmp/core-source
