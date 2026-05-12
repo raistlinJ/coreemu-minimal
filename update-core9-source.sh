@@ -39,26 +39,28 @@ echo "==> Installing build tools..."
 "$CORE_VENV/bin/pip" install grpcio-tools
 
 echo "==> Compiling protobuf/gRPC stubs..."
-cd daemon
 # The _pb2.py and _pb2_grpc.py files are generated from .proto definitions.
 # The .deb build process creates these, but they don't exist in raw source.
-# We must compile them before installing.
-PROTO_DIR="proto"
-OUT_DIR="core/api/grpc"
-if [ -d "$PROTO_DIR" ]; then
+REPO_ROOT="/tmp/core-source"
+PROTO_ROOT="$REPO_ROOT/daemon/proto"
+PROTO_FILES="$PROTO_ROOT/core/api/grpc"
+
+if [ -d "$PROTO_FILES" ]; then
+    # --proto_path=daemon/proto  -> protoc resolves imports from here
+    # --python_out=daemon/       -> generated files land at daemon/core/api/grpc/*_pb2.py
+    #                               matching the Python import: from core.api.grpc import common_pb2
     "$CORE_VENV/bin/python" -m grpc_tools.protoc \
-        -I "$PROTO_DIR" \
-        --python_out="$OUT_DIR" \
-        --grpc_python_out="$OUT_DIR" \
-        "$PROTO_DIR"/*.proto
-    echo "    Compiled $(ls "$PROTO_DIR"/*.proto | wc -l) proto files."
+        --proto_path="$PROTO_ROOT" \
+        --python_out="$REPO_ROOT/daemon" \
+        --grpc_python_out="$REPO_ROOT/daemon" \
+        "$PROTO_FILES"/*.proto
+    echo "    Compiled $(ls "$PROTO_FILES"/*.proto | wc -l) proto files."
 else
-    echo "    WARNING: No proto directory found, skipping stub generation."
+    echo "    WARNING: No proto files found at $PROTO_FILES, skipping stub generation."
 fi
 
 echo "==> Installing CoreEMU Python daemon into $CORE_VENV..."
-# Install into the .deb's venv where all dependencies already exist.
-# --no-deps ensures we only overwrite CoreEMU code without touching the existing dependency tree.
+cd "$REPO_ROOT/daemon"
 "$CORE_VENV/bin/pip" install --no-deps .
 
 echo "==> Cleaning up..."
