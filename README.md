@@ -34,8 +34,9 @@ For optimal performance and to ensure enough space for emulator artifacts, the f
    apt update && apt install -y git
    git clone https://github.com/raistlinJ/coreemu-minimal.git
    cd coreemu-minimal
-   ./setup-coreemu9.2.1.sh
+   ./setup-coreemu9.2.1.sh [CUSTOM_DEB_URL]
    ```
+   *(Optional: Pass a direct URL to a `.deb` package as the first argument to bypass the GitHub API latest-release check.)*
 3. **Reboot**: The script will prompt you to reboot when finished.
 4. **Access GUI**: Log in via the LightDM graphical login screen, open a terminal, and run `core-gui`.
 
@@ -53,8 +54,9 @@ If you require the legacy interface (`core-gui-legacy`) to manage custom service
    apt update && apt install -y git
    git clone https://github.com/raistlinJ/coreemu-minimal.git
    cd coreemu-minimal
-   ./setup-coreemu-8.2.0.sh
+   ./setup-coreemu-8.2.0.sh [CUSTOM_REPO_URL] [BRANCH_OR_TAG]
    ```
+   *(Optional: Pass a custom Git repository URL and branch/tag as arguments to override the default CoreEMU 8.2.0 source.)*
 3. **Reboot**: The script will prompt you to reboot when finished.
 4. **Access GUI**: Log in via LightDM, open a terminal, and run `core-gui`.
 
@@ -97,10 +99,37 @@ journalctl -u core-autostart
 > [!NOTE]
 > On 9.2.1, scenarios are loaded via `core-cli xml -f <file> -s`. On 8.2.0, scenarios are loaded via `core-gui-legacy -b <file>`.
 
-## Troubleshooting
+## Maintenance & Updates
 
-If an installation fails mid-way and you need to start fresh, run the cleanup utility before re-running the setup script:
+The setup scripts are designed to be idempotent and can be safely re-run to update CoreEMU or repair a broken installation.
+
+### How to Update
+
+To update to the latest version of CoreEMU, simply pull the latest changes from this repository and run the appropriate setup script again:
+
 ```bash
-./cleanup.sh
+git pull
+./setup-coreemu9.2.1.sh
 ```
-This removes all cached build directories (`/tmp/core`, `/tmp/ospf-mdr`), previously installed `core` Python packages, and leftover `pipx` environments.
+
+**What happens during an update:**
+- **CoreEMU 9.2.1**: The script fetches the latest release URL from GitHub. `apt` will automatically upgrade the installation if a newer version is available.
+- **CoreEMU 8.2.0**: The script wipes the temporary source directory, clones the latest code, and performs a clean rebuild.
+- **Optimized Re-runs**: The scripts skip time-consuming steps (like Docker installation or OSPF-MDR compilation) if they are already present on the system.
+
+### Fresh Start
+
+If an installation fails or you want to start from a completely clean state, use the cleanup utility before re-running the setup:
+
+### Development & Forks
+
+If you are a developer working on a fork of CoreEMU and want to test changes without rebuilding the `.deb` package, use the `update-from-source.sh` utility:
+
+```bash
+sudo ./update-from-source.sh https://github.com/youruser/core.git my-branch
+```
+
+This will:
+1. Clone your fork to a temporary directory.
+2. Install the updated Python `core` package directly into your system.
+3. Restart the `core-daemon` service to apply your changes.

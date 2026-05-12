@@ -42,12 +42,17 @@ apt-get install -y xorg xfce4 lightdm dbus-x11 x11-utils xterm
 
 
 
-echo "==> Compiling CoreEMU 8.2.0 from source (required for legacy GUI)..."
+echo "==> Fetching CoreEMU source..."
+# Allow custom repository and branch via arguments
+CORE_REPO_URL="${1:-https://github.com/coreemu/core.git}"
+CORE_BRANCH="${2:-release-8.2.0}"
+
+echo "==> Compiling CoreEMU from $CORE_REPO_URL ($CORE_BRANCH)..."
 cd /tmp
 rm -rf /tmp/core
-git clone https://github.com/coreemu/core.git
+git clone "$CORE_REPO_URL" core
 cd core
-git checkout release-8.2.0
+git checkout "$CORE_BRANCH"
 
 echo "==> Patching CoreEMU dependencies for Python 3.9 compatibility..."
 # grpcio 1.27.2 lacks Python 3.9 wheels and fails to compile from source. 
@@ -195,17 +200,21 @@ systemctl daemon-reload
 systemctl enable core-autostart
 
 echo "==> Compiling and Installing OSPF-MDR (Zebra)..."
-# CoreEMU natively expects Zebra from Quagga/OSPF-MDR
-rm -rf /tmp/ospf-mdr
-git clone https://github.com/USNavalResearchLaboratory/ospf-mdr.git /tmp/ospf-mdr
-cd /tmp/ospf-mdr
-./bootstrap.sh
-export CFLAGS="-fcommon -ggdb"
-./configure --disable-doc --enable-user=root --enable-group=root --with-cflags="-ggdb -fcommon" --sysconfdir=/usr/local/etc/quagga --enable-vtysh --localstatedir=/var/run/quagga
-make -j $(nproc)
-make install
-cd -
-rm -rf /tmp/ospf-mdr
+if [ -f "/usr/local/sbin/zebra" ]; then
+    echo "OSPF-MDR (Zebra) is already installed, skipping compilation."
+else
+    # CoreEMU natively expects Zebra from Quagga/OSPF-MDR
+    rm -rf /tmp/ospf-mdr
+    git clone https://github.com/USNavalResearchLaboratory/ospf-mdr.git /tmp/ospf-mdr
+    cd /tmp/ospf-mdr
+    ./bootstrap.sh
+    export CFLAGS="-fcommon -ggdb"
+    ./configure --disable-doc --enable-user=root --enable-group=root --with-cflags="-ggdb -fcommon" --sysconfdir=/usr/local/etc/quagga --enable-vtysh --localstatedir=/var/run/quagga
+    make -j $(nproc)
+    make install
+    cd -
+    rm -rf /tmp/ospf-mdr
+fi
 
 # =========================================
 # Regular (non-root) User Setup

@@ -66,17 +66,25 @@ if ! command -v docker &> /dev/null; then
         echo "Note: Run 'usermod -aG docker <your_user>' to manage docker without sudo."
     fi
 else
-    echo "Docker is already installed."
+    echo "==> Docker is already installed, skipping installation."
 fi
 
-echo "==> Fetching latest CoreEMU release..."
-# Use GitHub API to find the latest non-distributed amd64 deb package
-CORE_URL=$(curl -s https://api.github.com/repos/coreemu/core/releases/latest | jq -r '.assets[] | select(.name | endswith("_amd64.deb") and (contains("distributed") | not)) | .browser_download_url' | head -n 1)
+echo "==> Fetching CoreEMU release..."
+# Check if a custom URL was provided as an argument
+CORE_URL="$1"
 
-if [ -z "$CORE_URL" ] || [ "$CORE_URL" = "null" ]; then
-    echo "Warning: Failed to fetch the latest release URL from GitHub."
-    echo "Defaulting to CoreEMU 9.2.1."
-    CORE_URL="https://github.com/coreemu/core/releases/download/release-9.2.1/core_9.2.1_amd64.deb"
+if [ -z "$CORE_URL" ]; then
+    echo "No URL provided, fetching latest release from GitHub..."
+    # Use GitHub API to find the latest non-distributed amd64 deb package
+    CORE_URL=$(curl -s https://api.github.com/repos/coreemu/core/releases/latest | jq -r '.assets[] | select(.name | endswith("_amd64.deb") and (contains("distributed") | not)) | .browser_download_url' | head -n 1)
+
+    if [ -z "$CORE_URL" ] || [ "$CORE_URL" = "null" ]; then
+        echo "Warning: Failed to fetch the latest release URL from GitHub."
+        echo "Defaulting to CoreEMU 9.2.1."
+        CORE_URL="https://github.com/coreemu/core/releases/download/release-9.2.1/core_9.2.1_amd64.deb"
+    fi
+else
+    echo "Using user-specified CoreEMU URL: $CORE_URL"
 fi
 
 echo "==> Downloading CoreEMU from $CORE_URL"
@@ -91,17 +99,21 @@ systemctl enable core-daemon
 systemctl restart core-daemon
 
 echo "==> Compiling and Installing OSPF-MDR (Zebra)..."
-# CoreEMU natively expects Zebra from Quagga/OSPF-MDR
-rm -rf /tmp/ospf-mdr
-git clone https://github.com/USNavalResearchLaboratory/ospf-mdr.git /tmp/ospf-mdr
-cd /tmp/ospf-mdr
-./bootstrap.sh
-export CFLAGS="-fcommon -ggdb"
-./configure --disable-doc --enable-user=root --enable-group=root --with-cflags="-ggdb -fcommon" --sysconfdir=/usr/local/etc/quagga --enable-vtysh --localstatedir=/var/run/quagga
-make -j $(nproc)
-make install
-cd -
-rm -rf /tmp/ospf-mdr
+if [ -f "/usr/local/sbin/zebra" ]; then
+    echo "OSPF-MDR (Zebra) is already installed, skipping compilation."
+else
+    # CoreEMU natively expects Zebra from Quagga/OSPF-MDR
+    rm -rf /tmp/ospf-mdr
+    git clone https://github.com/USNavalResearchLaboratory/ospf-mdr.git /tmp/ospf-mdr
+    cd /tmp/ospf-mdr
+    ./bootstrap.sh
+    export CFLAGS="-fcommon -ggdb"
+    ./configure --disable-doc --enable-user=root --enable-group=root --with-cflags="-ggdb -fcommon" --sysconfdir=/usr/local/etc/quagga --enable-vtysh --localstatedir=/var/run/quagga
+    make -j $(nproc)
+    make install
+    cd -
+    rm -rf /tmp/ospf-mdr
+fi
 
 echo "==> Cleaning up..."
 rm coreemu.deb
