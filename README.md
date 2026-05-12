@@ -121,12 +121,11 @@ git pull
 
 If an installation fails or you want to start from a completely clean state, use the cleanup utility before re-running the setup:
 
-### Development & Forks
-
-If you are a developer working on a fork of CoreEMU and want to test changes without rebuilding the `.deb` package, use the `update-from-source.sh` utility:
+### Source-Based Updates for Developers (9.2.1+)
+Added [update-core9-source.sh](update-core9-source.sh), which allows for the most efficient code updates:
 
 ```bash
-sudo ./update-from-source.sh https://github.com/youruser/core.git my-branch
+sudo ./update-core9-source.sh https://github.com/youruser/core.git my-branch
 ```
 
 This will:

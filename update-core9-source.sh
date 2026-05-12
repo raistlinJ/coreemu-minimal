@@ -1,5 +1,5 @@
 #!/bin/bash
-# update-from-source.sh
+# update-core9-source.sh
 # Efficiently update CoreEMU 9.2.1+ from a Git fork without rebuilding the .deb package.
 
 set -e
@@ -14,8 +14,8 @@ REPO_URL="${1}"
 BRANCH="${2:-master}"
 
 if [ -z "$REPO_URL" ]; then
-    echo "Usage: ./update-from-source.sh <REPO_URL> [BRANCH]"
-    echo "Example: ./update-from-source.sh https://github.com/youruser/core.git my-fix-branch"
+    echo "Usage: ./update-core9-source.sh <REPO_URL> [BRANCH]"
+    echo "Example: ./update-core9-source.sh https://github.com/youruser/core.git my-fix-branch"
     exit 1
 fi
 
