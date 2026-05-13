@@ -45,10 +45,9 @@ cd "$CORE_SOURCE_DIR"
 git config pull.rebase true
 
 if [ -n "$CORE_REPO" ]; then
-    CURRENT_BRANCH=$(git branch --show-current)
     if [ -z "$CORE_BRANCH" ]; then
-        CORE_BRANCH=${CURRENT_BRANCH:-main}
-        echo "    No branch specified, defaulting to $CORE_BRANCH"
+        CORE_BRANCH="HEAD"
+        echo "    No branch specified, defaulting to remote's default branch (HEAD)"
     fi
     echo "    Pulling from $CORE_REPO $CORE_BRANCH (with rebase)..."
     git pull "$CORE_REPO" "$CORE_BRANCH"
