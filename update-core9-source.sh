@@ -35,9 +35,34 @@ else
     echo "    core-daemon is already stopped."
 fi
 
+CORE_REPO="$1"
+CORE_BRANCH="$2"
+
 echo "==> Pulling latest changes..."
 cd "$CORE_SOURCE_DIR"
-git pull
+
+# Configure git to rebase on pull to avoid merge commits/prompts
+git config pull.rebase true
+
+if [ -n "$CORE_REPO" ]; then
+    CURRENT_BRANCH=$(git branch --show-current)
+    if [ -z "$CORE_BRANCH" ]; then
+        CORE_BRANCH=${CURRENT_BRANCH:-main}
+        echo "    No branch specified, defaulting to $CORE_BRANCH"
+    fi
+    echo "    Pulling from $CORE_REPO $CORE_BRANCH (with rebase)..."
+    git pull "$CORE_REPO" "$CORE_BRANCH"
+else
+    # No arguments provided, pull current branch from origin
+    CURRENT_BRANCH=$(git branch --show-current)
+    if [ -n "$CURRENT_BRANCH" ]; then
+        echo "    Pulling latest for branch: $CURRENT_BRANCH..."
+        git pull origin "$CURRENT_BRANCH" || git pull
+    else
+        git pull
+    fi
+fi
+
 echo "    Updated to $(git log --oneline -1)"
 
 # Generate constants.py from template
